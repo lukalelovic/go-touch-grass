@@ -23,14 +23,14 @@ Follow your friends to see what they are up to outside, and track your own activ
 ## Development Checklist
 
 ### Phase 0 — Project Setup
-- [ ] Install latest Xcode
-- [ ] Create new iOS App project
-  - [ ] Interface: SwiftUI
-  - [ ] Language: Swift
-  - [ ] Minimum iOS version: current – 1
-- [ ] Run app successfully on simulator
-- [ ] Set up Git repository
-- [ ] Add basic README
+- [x] Install latest Xcode
+- [x] Create new iOS App project
+  - [x] Interface: SwiftUI
+  - [x] Language: Swift
+  - [x] Minimum iOS version: current – 1
+- [x] Run app successfully on simulator
+- [x] Set up Git repository
+- [x] Add basic README
 
 ### Phase 1 — SwiftUI Foundations (No Backend)
 Goal: App is fully navigable with fake data
