@@ -7,6 +7,23 @@
 import SwiftUI
 
 struct ContentView: View {
+    init() {
+        // Configure tab bar appearance for opaque icons
+        let appearance = UITabBarAppearance()
+        appearance.configureWithDefaultBackground()
+
+        // Active tab color (fully opaque green)
+        appearance.stackedLayoutAppearance.selected.iconColor = UIColor(red: 0.1, green: 0.6, blue: 0.1, alpha: 1.0)
+        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [.foregroundColor: UIColor(red: 0.1, green: 0.6, blue: 0.1, alpha: 1.0)]
+
+        // Inactive tab color (fully opaque gray)
+        appearance.stackedLayoutAppearance.normal.iconColor = UIColor.gray
+        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor.gray]
+
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
+
     var body: some View {
         TabView {
             FeedTab()
@@ -24,49 +41,7 @@ struct ContentView: View {
                     Label("Profile", systemImage: "person.fill")
                 }
         }
-        .tint(Color(red: 0.0, green: 0.5, blue: 0.0))
-    }
-}
-
-// MARK: - Feed Tab
-struct FeedTab: View {
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                Color(red: 0.9, green: 0.98, blue: 0.9)
-                    .ignoresSafeArea()
-                Text("Feed")
-            }
-            .navigationTitle("Feed")
-        }
-    }
-}
-
-// MARK: - Log Activity Tab
-struct LogActivityTab: View {
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                Color(red: 0.9, green: 0.98, blue: 0.9)
-                    .ignoresSafeArea()
-                Text("Log Activity")
-            }
-            .navigationTitle("Log Activity")
-        }
-    }
-}
-
-// MARK: - Profile Tab
-struct ProfileTab: View {
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                Color(red: 0.9, green: 0.98, blue: 0.9)
-                    .ignoresSafeArea()
-                Text("Profile")
-            }
-            .navigationTitle("Profile")
-        }
+        .tint(Color(red: 0.1, green: 0.6, blue: 0.1))
     }
 }
 

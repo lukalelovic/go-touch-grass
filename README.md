@@ -43,23 +43,22 @@ Goal: App is fully navigable with fake data
 - [x] Create NavigationStack per tab
 
 #### Data Models
-- [ ] Create Activity model
-- [ ] Create User model (minimal)
+- [x] Create Activity model
+- [x] Create User model (minimal)
 
 #### Feed Screen
-- [ ] Display list of activities
-- [ ] Activity row shows:
-  - [ ] Username
-  - [ ] Activity type
-  - [ ] Timestamp
-  - [ ] Photo placeholder
-- [ ] Tap activity → Activity Detail screen
+- [x] Display list of activities
+- [x] Activity row shows:
+  - [x] Username
+  - [x] Activity type
+  - [x] Timestamp
+- [x] Tap activity → Activity Detail screen
 
 #### Activity Detail Screen
-- [ ] Large photo placeholder
-- [ ] Notes / description
-- [ ] Map placeholder
-- [ ] “Nice” button (no functionality yet)
+- [x] Notes / description
+- [x] Map placeholder
+- [x] “Nice” button (no functionality yet)
+
 
 #### Log Activity Screen
 - [ ] Activity type picker
@@ -91,6 +90,26 @@ Goal: Replace fake data with real persistence
 - [ ] Add Supabase Swift SDK
 
 #### Auth
-- [ ] Anonymous or email sign-in
+- [ ] Apple, phone, or email sign-in
 - [ ] Store user session
 - [ ] Handle logged-out
+
+#### Database Architecture
+- [ ] User database objects
+- [ ] Activity database objects
+- [ ] Activity types table
+- [ ] Activity subtypes
+
+#### More Activity Types
+- [ ] Gym with subtypes (Push, Pull, Leg, Cardio)
+- [ ] Cooking Class
+- [ ] Dinner
+- [ ] Movie
+- [ ] Bar
+- [ ] Basketball
+- [ ] Football
+- [ ] Soccer
+- [ ] Groceries
+- [ ] Laundry
+- [ ] Cleaning
+- [ ] Etc
