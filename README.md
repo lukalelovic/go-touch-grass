@@ -9,7 +9,7 @@ Follow your friends to see what they are up to outside, and track your own activ
 ## Tech Stack
 | Layer         | Choice                              |
 | ------------- | ----------------------------------- |
-| Frontend        | SwiftUI                             |
+| Frontend      | SwiftUI                             |
 | State         | MVVM                                |
 | Auth          | Supabase Auth                       |
 | DB            | PostgreSQL                          |
@@ -36,11 +36,11 @@ Follow your friends to see what they are up to outside, and track your own activ
 Goal: App is fully navigable with fake data
 
 #### App Structure
-- [ ] Set up TabView
-  - [ ] Feed tab
-  - [ ] Log Activity tab
-  - [ ] Profile tab
-- [ ] Create NavigationStack per tab
+- [x] Set up TabView
+  - [x] Feed tab
+  - [x] Log Activity tab
+  - [x] Profile tab
+- [x] Create NavigationStack per tab
 
 #### Data Models
 - [ ] Create Activity model
