@@ -59,24 +59,23 @@ Goal: App is fully navigable with fake data
 - [x] Map placeholder
 - [x] “Nice” button (no functionality yet)
 
-
 #### Log Activity Screen
-- [ ] Activity type picker
-- [ ] Notes text field
-- [ ] Optional photo placeholder
-- [ ] Save button adds activity to in-memory list
+- [x] Activity type picker
+- [x] Notes text field
+- [x] Location picker
+- [x] Save button adds activity to in-memory list
 
 #### Profile Screen
-- [ ] Username display
-- [ ] Activity streak placeholder
-- [ ] List of recent activities
+- [x] Username display
+- [x] Activity streak placeholder
+- [x] List of recent activities
 
 ### Phase 2 — Architecture Cleanup (Still No Backend)
 Goal: Introduce MVVM without overengineering
 
 - [ ] Create ActivityViewModel
 - [ ] Move activity logic out of views
-- [ ] Use Observable / ObservableObject
+- [x] Use Observable / ObservableObject
 - [ ] Inject view models via StateObject / EnvironmentObject
 - [ ] Remove logic from SwiftUI views where possible
 
@@ -100,6 +99,8 @@ Goal: Replace fake data with real persistence
 - [ ] Activity types table
 - [ ] Activity subtypes
 
+### Phase 4 - Fully Fledged Features
+
 #### More Activity Types
 - [ ] Gym with subtypes (Push, Pull, Leg, Cardio)
 - [ ] Cooking Class
@@ -110,6 +111,13 @@ Goal: Replace fake data with real persistence
 - [ ] Football
 - [ ] Soccer
 - [ ] Groceries
-- [ ] Laundry
 - [ ] Cleaning
+- [ ] Coffee
 - [ ] Etc
+
+### Enhanced Profiles
+- [ ] Public/private access
+- [ ] 'Friendship' requests
+- [ ] Badges
+- [ ] Badge levels
+- [ ] Settings page (change username, delete account, export activities)

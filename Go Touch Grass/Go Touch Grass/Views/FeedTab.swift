@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct FeedTab: View {
-    @State private var activities = Activity.sampleActivities
+    @StateObject private var activityStore = ActivityStore.shared
 
     var body: some View {
         NavigationStack {
@@ -16,7 +16,7 @@ struct FeedTab: View {
                 Color(red: 0.85, green: 0.93, blue: 0.85)
                     .ignoresSafeArea()
 
-                List(activities) { activity in
+                List(activityStore.activities) { activity in
                     NavigationLink(destination: ActivityDetailView(activity: activity)) {
                         ActivityRowView(activity: activity)
                     }
