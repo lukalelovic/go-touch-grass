@@ -1,22 +1,18 @@
 //
-//  LogActivityTab.swift
+//  TouchGrassTab.swift
 //  Go Touch Grass
 //
-//  Created by Luka Lelovic on 12/24/25.
+//  Created by Luka Lelovic on 12/25/25.
 //
 
 import SwiftUI
+import MapKit
 
 struct TouchGrassTab: View {
-    @StateObject private var activityStore = ActivityStore.shared
-    @State private var selectedActivityType: ActivityType = .hiking
-    @State private var notes: String = ""
     @State private var selectedLocation: Location?
     @State private var showLocationPicker = false
-    @State private var showSuccessAlert = false
-
-    // TODO: Replace with actual current user from Supabase Auth
-    private let currentUser = User.sampleUsers[0]
+    @State private var events: [LocalEvent] = LocalEvent.sampleEvents
+    @State private var filteredEvents: [LocalEvent] = LocalEvent.sampleEvents
 
     var body: some View {
         NavigationStack {
@@ -24,105 +20,355 @@ struct TouchGrassTab: View {
                 Color(red: 0.85, green: 0.93, blue: 0.85)
                     .ignoresSafeArea()
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        // Activity Type Picker
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Activity Type")
-                                .font(.headline)
-                                .foregroundColor(.primary)
+                VStack(spacing: 0) {
+                    // Location Picker Header
+                    VStack(spacing: 12) {
+                        Button(action: {
+                            showLocationPicker = true
+                        }) {
+                            HStack {
+                                Image(systemName: "mappin.circle.fill")
+                                    .font(.title3)
+                                    .foregroundColor(selectedLocation != nil ? Color(red: 0.1, green: 0.6, blue: 0.1) : .gray)
 
-                            Picker("Activity Type", selection: $selectedActivityType) {
-                                ForEach(ActivityType.allCases, id: \.self) { type in
-                                    HStack {
-                                        Image(systemName: type.icon)
-                                        Text(type.rawValue)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Search Location")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+
+                                    if let location = selectedLocation {
+                                        Text(location.name ?? "Unknown Location")
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.primary)
+                                    } else {
+                                        Text("Tap to select location")
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
                                     }
-                                    .tag(type)
+                                }
+
+                                Spacer()
+
+                                if selectedLocation != nil {
+                                    Button(action: {
+                                        selectedLocation = nil
+                                        filteredEvents = events
+                                    }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.gray)
+                                    }
+                                } else {
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(.gray)
                                 }
                             }
-                            .pickerStyle(.menu)
                             .padding()
                             .background(Color.white.opacity(0.8))
                             .cornerRadius(12)
                         }
 
-                        // Notes Text Field
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Notes")
-                                .font(.headline)
-                                .foregroundColor(.primary)
+                        // Radius indicator
+                        if selectedLocation != nil {
+                            HStack(spacing: 6) {
+                                Image(systemName: "location.circle")
+                                    .font(.caption)
+                                Text("Showing events within 50 miles")
+                                    .font(.caption)
+                            }
+                            .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding()
 
-                            TextEditor(text: $notes)
-                                .frame(height: 120)
-                                .padding(8)
-                                .background(Color.white.opacity(0.8))
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                )
+                    // Events List
+                    if filteredEvents.isEmpty {
+                        VStack(spacing: 16) {
+                            Spacer()
+                            Image(systemName: "calendar.badge.exclamationmark")
+                                .font(.system(size: 60))
+                                .foregroundColor(.gray.opacity(0.5))
+                            Text("No events found")
+                                .font(.title3)
+                                .foregroundColor(.secondary)
+                            Text("Try selecting a different location")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                        }
+                    } else {
+                        ScrollView {
+                            LazyVStack(spacing: 12) {
+                                ForEach(filteredEvents) { event in
+                                    NavigationLink(destination: LocalEventDetailView(event: event)) {
+                                        LocalEventRowView(event: event)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                            }
+                            .padding()
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Touch Grass")
+            .sheet(isPresented: $showLocationPicker) {
+                LocationPickerView(selectedLocation: $selectedLocation)
+            }
+            .onChange(of: selectedLocation) { oldValue, newValue in
+                filterEventsByLocation()
+            }
+        }
+    }
+
+    private func filterEventsByLocation() {
+        guard let userLocation = selectedLocation else {
+            filteredEvents = events
+            return
+        }
+
+        // TODO: Implement actual distance-based filtering
+        // - Calculate distance between user location and event locations
+        // - Filter events within 50 mile radius
+        // - Use CLLocation.distance(from:) method
+        //
+        // let userCLLocation = CLLocation(
+        //     latitude: userLocation.latitude,
+        //     longitude: userLocation.longitude
+        // )
+        //
+        // filteredEvents = events.filter { event in
+        //     let eventCLLocation = CLLocation(
+        //         latitude: event.location.latitude,
+        //         longitude: event.location.longitude
+        //     )
+        //     let distanceInMeters = userCLLocation.distance(from: eventCLLocation)
+        //     let distanceInMiles = distanceInMeters / 1609.34
+        //     return distanceInMiles <= 50
+        // }
+
+        // For now, show all events (placeholder behavior)
+        filteredEvents = events
+    }
+}
+
+// MARK: - Local Event Row View
+struct LocalEventRowView: View {
+    let event: LocalEvent
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Image Placeholder
+            RoundedRectangle(cornerRadius: 0)
+                .fill(Color.gray.opacity(0.3))
+                .overlay(
+                    Image(systemName: event.eventType.icon)
+                        .font(.system(size: 40))
+                        .foregroundColor(.white.opacity(0.7))
+                )
+                .frame(height: 180)
+
+            // Event Info
+            VStack(alignment: .leading, spacing: 8) {
+                // Title and Type
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(event.title)
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .lineLimit(2)
+
+                        HStack(spacing: 4) {
+                            Image(systemName: event.eventType.icon)
+                                .font(.caption)
+                            Text(event.eventType.rawValue)
+                                .font(.caption)
+                        }
+                        .foregroundColor(.white.opacity(0.8))
+                    }
+
+                    Spacer()
+                }
+
+                // Description
+                Text(event.description)
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.9))
+                    .lineLimit(2)
+
+                Divider()
+                    .background(Color.white.opacity(0.3))
+
+                // Date, Location, and Attendees
+                VStack(spacing: 6) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "calendar")
+                            .font(.caption)
+                        Text(formatDate(event.date))
+                            .font(.caption)
+                    }
+                    .foregroundColor(.white.opacity(0.8))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HStack(spacing: 6) {
+                        Image(systemName: "mappin.circle.fill")
+                            .font(.caption)
+                        Text(event.location.name ?? "Unknown Location")
+                            .font(.caption)
+                            .lineLimit(1)
+                    }
+                    .foregroundColor(.white.opacity(0.8))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HStack(spacing: 6) {
+                        Image(systemName: "person.2.fill")
+                            .font(.caption)
+                        Text("\(event.attendeeCount) attending")
+                            .font(.caption)
+                    }
+                    .foregroundColor(.white.opacity(0.8))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .padding(12)
+            .background(Color(red: 0.2, green: 0.3, blue: 0.2))
+        }
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+    }
+
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE, MMM d 'at' h:mm a"
+        return formatter.string(from: date)
+    }
+}
+
+// MARK: - Local Event Detail View
+struct LocalEventDetailView: View {
+    let event: LocalEvent
+
+    var body: some View {
+        ZStack {
+            Color(red: 0.85, green: 0.93, blue: 0.85)
+                .ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    // Image Placeholder
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.gray.opacity(0.3))
+                        .overlay(
+                            Image(systemName: event.eventType.icon)
+                                .font(.system(size: 60))
+                                .foregroundColor(.white.opacity(0.7))
+                        )
+                        .frame(height: 250)
+
+                    VStack(alignment: .leading, spacing: 16) {
+                        // Title and Type
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(event.title)
+                                .font(.title)
+                                .fontWeight(.bold)
+
+                            HStack(spacing: 6) {
+                                Image(systemName: event.eventType.icon)
+                                Text(event.eventType.rawValue)
+                            }
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                         }
 
-                        // Location Picker
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Location (Optional)")
+                        Divider()
+
+                        // Description
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("About")
                                 .font(.headline)
-                                .foregroundColor(.primary)
+                            Text(event.description)
+                                .font(.body)
+                        }
 
-                            Button(action: {
-                                showLocationPicker = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "mappin.circle.fill")
-                                        .foregroundColor(selectedLocation != nil ? Color(red: 0.1, green: 0.6, blue: 0.1) : .gray)
+                        // Date & Time
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("When")
+                                .font(.headline)
+                            HStack(spacing: 6) {
+                                Image(systemName: "calendar")
+                                Text(formatFullDate(event.date))
+                            }
+                            .font(.body)
+                        }
 
-                                    if let location = selectedLocation {
-                                        Text(location.name ?? "Unknown Location")
-                                            .foregroundColor(.primary)
-                                    } else {
-                                        Text("Search for a location")
-                                            .foregroundColor(.secondary)
-                                    }
+                        // Location with Map
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Location")
+                                .font(.headline)
 
-                                    Spacer()
-
-                                    if selectedLocation != nil {
-                                        Button(action: {
-                                            selectedLocation = nil
-                                        }) {
-                                            Image(systemName: "xmark.circle.fill")
-                                                .foregroundColor(.gray)
-                                        }
-                                    } else {
-                                        Image(systemName: "chevron.right")
-                                            .foregroundColor(.gray)
-                                    }
-                                }
-                                .padding()
-                                .background(Color.white.opacity(0.8))
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            Map(position: .constant(MapCameraPosition.region(
+                                MKCoordinateRegion(
+                                    center: CLLocationCoordinate2D(
+                                        latitude: event.location.latitude,
+                                        longitude: event.location.longitude
+                                    ),
+                                    span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
                                 )
+                            ))) {
+                                Marker(event.location.name ?? "Event Location", coordinate: CLLocationCoordinate2D(
+                                    latitude: event.location.latitude,
+                                    longitude: event.location.longitude
+                                ))
+                            }
+                            .frame(height: 200)
+                            .cornerRadius(12)
+
+                            if let locationName = event.location.name {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "mappin.circle.fill")
+                                    Text(locationName)
+                                }
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
                             }
                         }
 
-                        // TODO: Add photo picker here in future
-                        // VStack(alignment: .leading, spacing: 8) {
-                        //     Text("Photo (Optional)")
-                        //         .font(.headline)
-                        //     Button("Add Photo") {
-                        //         // Photo picker logic
-                        //     }
-                        // }
+                        // Organizer and Attendees
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Organizer")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text(event.organizerName)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                            }
 
-                        // Save Button
-                        Button(action: saveActivity) {
+                            Spacer()
+
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text("Attending")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text("\(event.attendeeCount) people")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                            }
+                        }
+                        .padding()
+                        .background(Color.white.opacity(0.5))
+                        .cornerRadius(12)
+
+                        // Join Button
+                        Button(action: {
+                            // TODO: Implement join event functionality
+                            // - Call API to register user for event
+                            // - Update attendee count
+                            // - Add event to user's calendar
+                        }) {
                             HStack {
                                 Image(systemName: "checkmark.circle.fill")
-                                Text("I Touched Grass!")
+                                Text("Join Event")
                             }
                             .font(.headline)
                             .foregroundColor(.white)
@@ -131,76 +377,18 @@ struct TouchGrassTab: View {
                             .background(Color(red: 0.1, green: 0.6, blue: 0.1))
                             .cornerRadius(12)
                         }
-                        .padding(.top, 10)
-
-                        // Info Text
-                        Text("Remember: You can only log 3 activities per day!")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity)
                     }
                     .padding()
                 }
             }
-            .navigationTitle("Touch Grass")
-            .sheet(isPresented: $showLocationPicker) {
-                LocationPickerView(selectedLocation: $selectedLocation)
-            }
-            .alert("Activity Logged!", isPresented: $showSuccessAlert) {
-                Button("OK", role: .cancel) {
-                    clearForm()
-                }
-            } message: {
-                Text("Your activity has been logged successfully!")
-            }
         }
+        .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func saveActivity() {
-        // Validate: Check daily limit (3 activities per day)
-        let todayCount = activityStore.getTodayActivityCount(for: currentUser)
-        if todayCount >= 3 {
-            // TODO: Show error alert instead
-            print("Daily limit reached! You can only log 3 activities per day.")
-            return
-        }
-
-        // Validate: Notes should not be empty
-        if notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            // TODO: Show error alert
-            print("Please add some notes about your activity!")
-            return
-        }
-
-        // Create Activity object
-        let newActivity = Activity(
-            user: currentUser,
-            activityType: selectedActivityType,
-            timestamp: Date(),
-            notes: notes.isEmpty ? nil : notes,
-            location: selectedLocation
-        )
-
-        // Save to in-memory store
-        activityStore.addActivity(newActivity)
-
-        // TODO: Later, call Supabase to persist activity
-        // - POST to Supabase activities table
-        // - Handle success/error responses
-        // supabaseClient.from("activities").insert(newActivity)
-
-        // TODO: Upload photo to Supabase Storage if provided
-        // - Upload image to storage bucket
-        // - Get URL and update activity record
-
-        // Show success message
-        showSuccessAlert = true
-    }
-
-    private func clearForm() {
-        selectedActivityType = .hiking
-        notes = ""
-        selectedLocation = nil
+    private func formatFullDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .full
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
 }

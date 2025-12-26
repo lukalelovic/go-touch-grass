@@ -59,7 +59,7 @@ Goal: App is fully navigable with fake data
 - [x] Map placeholder
 - [x] “Nice” button (no functionality yet)
 
-#### Log Activity Screen
+#### Share Activity Screen
 - [x] Activity type picker
 - [x] Notes text field
 - [x] Location picker
@@ -69,6 +69,9 @@ Goal: App is fully navigable with fake data
 - [x] Username display
 - [x] Activity streak placeholder
 - [x] List of recent activities
+
+#### Touch Grass Screen
+- [x] Local activities in a user's area (static data for now)
 
 ### Phase 2 — Architecture Cleanup (Still No Backend)
 Goal: Introduce MVVM without overengineering

@@ -16,7 +16,12 @@ struct ContentView: View {
 
             TouchGrassTab()
                 .tabItem {
-                    Label("Touch Grass", systemImage: "plus.circle.fill")
+                    Label("Touch Grass", systemImage: "leaf.fill")
+                }
+
+            ShareTab()
+                .tabItem {
+                    Label("Share", systemImage: "plus.circle.fill")
                 }
 
             ProfileTab()
