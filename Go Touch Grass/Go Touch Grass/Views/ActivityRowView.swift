@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import MapKit
 
 struct ActivityRowView: View {
     let activity: Activity
@@ -42,6 +43,26 @@ struct ActivityRowView: View {
                     .font(.body)
                     .lineLimit(2)
                     .foregroundColor(.white)
+            }
+
+            // Map preview
+            if let location = activity.location {
+                Map(position: .constant(.region(MKCoordinateRegion(
+                    center: CLLocationCoordinate2D(
+                        latitude: location.latitude,
+                        longitude: location.longitude
+                    ),
+                    span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+                )))) {
+                    Marker("", coordinate: CLLocationCoordinate2D(
+                        latitude: location.latitude,
+                        longitude: location.longitude
+                    ))
+                    .tint(.green)
+                }
+                .frame(height: 120)
+                .cornerRadius(8)
+                .allowsHitTesting(false)
             }
 
             // Location
