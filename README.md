@@ -76,11 +76,14 @@ Goal: App is fully navigable with fake data
 ### Phase 2 — Architecture Cleanup (Still No Backend)
 Goal: Introduce MVVM without overengineering
 
-- [ ] Create ActivityViewModel
-- [ ] Move activity logic out of views
+- [x] Create FeedViewModel
+- [x] Create ShareViewModel
+- [x] Create EventViewModel
+- [x] Create ProfileViewModel
+- [x] Move activity logic out of views
 - [x] Use Observable / ObservableObject
-- [ ] Inject view models via StateObject / EnvironmentObject
-- [ ] Remove logic from SwiftUI views where possible
+- [x] Inject view models via StateObject
+- [x] Remove logic from SwiftUI views where possible
 
 ### Phase 3 — Backend (Minimal + Cost-Safe)
 Goal: Replace fake data with real persistence

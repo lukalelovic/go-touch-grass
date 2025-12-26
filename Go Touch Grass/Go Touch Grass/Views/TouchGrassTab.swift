@@ -9,10 +9,7 @@ import SwiftUI
 import MapKit
 
 struct TouchGrassTab: View {
-    @State private var selectedLocation: Location?
-    @State private var showLocationPicker = false
-    @State private var events: [LocalEvent] = LocalEvent.sampleEvents
-    @State private var filteredEvents: [LocalEvent] = LocalEvent.sampleEvents
+    @StateObject private var viewModel = EventViewModel()
 
     var body: some View {
         NavigationStack {
@@ -24,19 +21,19 @@ struct TouchGrassTab: View {
                     // Location Picker Header
                     VStack(spacing: 12) {
                         Button(action: {
-                            showLocationPicker = true
+                            viewModel.showLocationPicker = true
                         }) {
                             HStack {
                                 Image(systemName: "mappin.circle.fill")
                                     .font(.title3)
-                                    .foregroundColor(selectedLocation != nil ? Color(red: 0.1, green: 0.6, blue: 0.1) : .gray)
+                                    .foregroundColor(viewModel.selectedLocation != nil ? Color(red: 0.1, green: 0.6, blue: 0.1) : .gray)
 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Search Location")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
 
-                                    if let location = selectedLocation {
+                                    if let location = viewModel.selectedLocation {
                                         Text(location.name ?? "Unknown Location")
                                             .font(.subheadline)
                                             .fontWeight(.medium)
@@ -50,10 +47,10 @@ struct TouchGrassTab: View {
 
                                 Spacer()
 
-                                if selectedLocation != nil {
+                                if viewModel.selectedLocation != nil {
                                     Button(action: {
-                                        selectedLocation = nil
-                                        filteredEvents = events
+                                        viewModel.selectedLocation = nil
+                                        viewModel.filterEventsByLocation()
                                     }) {
                                         Image(systemName: "xmark.circle.fill")
                                             .foregroundColor(.gray)
@@ -69,7 +66,7 @@ struct TouchGrassTab: View {
                         }
 
                         // Radius indicator
-                        if selectedLocation != nil {
+                        if viewModel.selectedLocation != nil {
                             HStack(spacing: 6) {
                                 Image(systemName: "location.circle")
                                     .font(.caption)
@@ -82,7 +79,7 @@ struct TouchGrassTab: View {
                     .padding()
 
                     // Events List
-                    if filteredEvents.isEmpty {
+                    if viewModel.filteredEvents.isEmpty {
                         VStack(spacing: 16) {
                             Spacer()
                             Image(systemName: "calendar.badge.exclamationmark")
@@ -99,7 +96,7 @@ struct TouchGrassTab: View {
                     } else {
                         ScrollView {
                             LazyVStack(spacing: 12) {
-                                ForEach(filteredEvents) { event in
+                                ForEach(viewModel.filteredEvents) { event in
                                     NavigationLink(destination: LocalEventDetailView(event: event)) {
                                         LocalEventRowView(event: event)
                                     }
@@ -112,43 +109,13 @@ struct TouchGrassTab: View {
                 }
             }
             .navigationTitle("Touch Grass")
-            .sheet(isPresented: $showLocationPicker) {
-                LocationPickerView(selectedLocation: $selectedLocation)
+            .sheet(isPresented: $viewModel.showLocationPicker) {
+                LocationPickerView(selectedLocation: $viewModel.selectedLocation)
             }
-            .onChange(of: selectedLocation) { oldValue, newValue in
-                filterEventsByLocation()
+            .onChange(of: viewModel.selectedLocation) { oldValue, newValue in
+                viewModel.filterEventsByLocation()
             }
         }
-    }
-
-    private func filterEventsByLocation() {
-        guard let userLocation = selectedLocation else {
-            filteredEvents = events
-            return
-        }
-
-        // TODO: Implement actual distance-based filtering
-        // - Calculate distance between user location and event locations
-        // - Filter events within 50 mile radius
-        // - Use CLLocation.distance(from:) method
-        //
-        // let userCLLocation = CLLocation(
-        //     latitude: userLocation.latitude,
-        //     longitude: userLocation.longitude
-        // )
-        //
-        // filteredEvents = events.filter { event in
-        //     let eventCLLocation = CLLocation(
-        //         latitude: event.location.latitude,
-        //         longitude: event.location.longitude
-        //     )
-        //     let distanceInMeters = userCLLocation.distance(from: eventCLLocation)
-        //     let distanceInMiles = distanceInMeters / 1609.34
-        //     return distanceInMiles <= 50
-        // }
-
-        // For now, show all events (placeholder behavior)
-        filteredEvents = events
     }
 }
 

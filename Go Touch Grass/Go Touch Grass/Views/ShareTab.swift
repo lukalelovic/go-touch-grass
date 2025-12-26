@@ -8,15 +8,7 @@
 import SwiftUI
 
 struct ShareTab: View {
-    @StateObject private var activityStore = ActivityStore.shared
-    @State private var selectedActivityType: ActivityType = .hiking
-    @State private var notes: String = ""
-    @State private var selectedLocation: Location?
-    @State private var showLocationPicker = false
-    @State private var showSuccessAlert = false
-
-    // TODO: Replace with actual current user from Supabase Auth
-    private let currentUser = User.sampleUsers[0]
+    @StateObject private var viewModel = ShareViewModel()
 
     var body: some View {
         NavigationStack {
@@ -32,7 +24,7 @@ struct ShareTab: View {
                                 .font(.headline)
                                 .foregroundColor(.primary)
 
-                            Picker("Activity Type", selection: $selectedActivityType) {
+                            Picker("Activity Type", selection: $viewModel.selectedActivityType) {
                                 ForEach(ActivityType.allCases, id: \.self) { type in
                                     HStack {
                                         Image(systemName: type.icon)
@@ -53,7 +45,7 @@ struct ShareTab: View {
                                 .font(.headline)
                                 .foregroundColor(.primary)
 
-                            TextEditor(text: $notes)
+                            TextEditor(text: $viewModel.notes)
                                 .frame(height: 120)
                                 .padding(8)
                                 .background(Color.white.opacity(0.8))
@@ -71,13 +63,13 @@ struct ShareTab: View {
                                 .foregroundColor(.primary)
 
                             Button(action: {
-                                showLocationPicker = true
+                                viewModel.showLocationPicker = true
                             }) {
                                 HStack {
                                     Image(systemName: "mappin.circle.fill")
-                                        .foregroundColor(selectedLocation != nil ? Color(red: 0.1, green: 0.6, blue: 0.1) : .gray)
+                                        .foregroundColor(viewModel.selectedLocation != nil ? Color(red: 0.1, green: 0.6, blue: 0.1) : .gray)
 
-                                    if let location = selectedLocation {
+                                    if let location = viewModel.selectedLocation {
                                         Text(location.name ?? "Unknown Location")
                                             .foregroundColor(.primary)
                                     } else {
@@ -87,9 +79,9 @@ struct ShareTab: View {
 
                                     Spacer()
 
-                                    if selectedLocation != nil {
+                                    if viewModel.selectedLocation != nil {
                                         Button(action: {
-                                            selectedLocation = nil
+                                            viewModel.selectedLocation = nil
                                         }) {
                                             Image(systemName: "xmark.circle.fill")
                                                 .foregroundColor(.gray)
@@ -119,7 +111,7 @@ struct ShareTab: View {
                         // }
 
                         // Save Button
-                        Button(action: saveActivity) {
+                        Button(action: viewModel.saveActivity) {
                             HStack {
                                 Image(systemName: "checkmark.circle.fill")
                                 Text("Share Activity")
@@ -144,63 +136,16 @@ struct ShareTab: View {
                 }
             }
             .navigationTitle("Share")
-            .sheet(isPresented: $showLocationPicker) {
-                LocationPickerView(selectedLocation: $selectedLocation)
+            .sheet(isPresented: $viewModel.showLocationPicker) {
+                LocationPickerView(selectedLocation: $viewModel.selectedLocation)
             }
-            .alert("Activity Logged!", isPresented: $showSuccessAlert) {
+            .alert("Activity Logged!", isPresented: $viewModel.showSuccessAlert) {
                 Button("OK", role: .cancel) {
-                    clearForm()
+                    viewModel.clearForm()
                 }
             } message: {
                 Text("Your activity has been logged successfully!")
             }
         }
-    }
-
-    private func saveActivity() {
-        // Validate: Check daily limit (3 activities per day)
-        let todayCount = activityStore.getTodayActivityCount(for: currentUser)
-        if todayCount >= 3 {
-            // TODO: Show error alert instead
-            print("Daily limit reached! You can only log 3 activities per day.")
-            return
-        }
-
-        // Validate: Notes should not be empty
-        if notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            // TODO: Show error alert
-            print("Please add some notes about your activity!")
-            return
-        }
-
-        // Create Activity object
-        let newActivity = Activity(
-            user: currentUser,
-            activityType: selectedActivityType,
-            timestamp: Date(),
-            notes: notes.isEmpty ? nil : notes,
-            location: selectedLocation
-        )
-
-        // Save to in-memory store
-        activityStore.addActivity(newActivity)
-
-        // TODO: Later, call Supabase to persist activity
-        // - POST to Supabase activities table
-        // - Handle success/error responses
-        // supabaseClient.from("activities").insert(newActivity)
-
-        // TODO: Upload photo to Supabase Storage if provided
-        // - Upload image to storage bucket
-        // - Get URL and update activity record
-
-        // Show success message
-        showSuccessAlert = true
-    }
-
-    private func clearForm() {
-        selectedActivityType = .hiking
-        notes = ""
-        selectedLocation = nil
     }
 }

@@ -8,14 +8,7 @@
 import SwiftUI
 
 struct ProfileTab: View {
-    @StateObject private var activityStore = ActivityStore.shared
-
-    // TODO: Replace with actual current user from Supabase Auth
-    @State private var currentUser: User = User.sampleUsers[0]
-    @State private var userActivities: [Activity] = []
-    @State private var currentStreak: Int = 0
-    @State private var totalActivities: Int = 0
-    @State private var badges: [String] = []
+    @StateObject private var viewModel = ProfileViewModel()
 
     var body: some View {
         NavigationStack {
@@ -37,11 +30,11 @@ struct ProfileTab: View {
                                         .foregroundColor(.white.opacity(0.7))
                                 )
 
-                            Text(currentUser.username)
+                            Text(viewModel.currentUser.username)
                                 .font(.title2)
                                 .fontWeight(.bold)
 
-                            if let email = currentUser.email {
+                            if let email = viewModel.currentUser.email {
                                 Text(email)
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
@@ -64,7 +57,7 @@ struct ProfileTab: View {
                                     Image(systemName: "flame.fill")
                                         .font(.system(size: 30))
                                         .foregroundColor(.orange)
-                                    Text("\(currentStreak)")
+                                    Text("\(viewModel.currentStreak)")
                                         .font(.title2)
                                         .fontWeight(.bold)
                                     Text("Day Streak")
@@ -81,7 +74,7 @@ struct ProfileTab: View {
                                     Image(systemName: "checkmark.circle.fill")
                                         .font(.system(size: 30))
                                         .foregroundColor(.green)
-                                    Text("\(totalActivities)")
+                                    Text("\(viewModel.totalActivities)")
                                         .font(.title2)
                                         .fontWeight(.bold)
                                     Text("Activities")
@@ -104,7 +97,7 @@ struct ProfileTab: View {
                             Text("Badges")
                                 .font(.headline)
 
-                            if badges.isEmpty {
+                            if viewModel.badges.isEmpty {
                                 Text("Complete activities to earn badges!")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
@@ -112,7 +105,7 @@ struct ProfileTab: View {
                                     .padding()
                             } else {
                                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 60))], spacing: 12) {
-                                    ForEach(badges, id: \.self) { badge in
+                                    ForEach(viewModel.badges, id: \.self) { badge in
                                         VStack {
                                             Image(systemName: "star.fill")
                                                 .font(.system(size: 30))
@@ -134,14 +127,14 @@ struct ProfileTab: View {
                             Text("Recent Activities")
                                 .font(.headline)
 
-                            if userActivities.isEmpty {
+                            if viewModel.userActivities.isEmpty {
                                 Text("No activities yet. Go touch grass!")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                                     .frame(maxWidth: .infinity, alignment: .center)
                                     .padding()
                             } else {
-                                ForEach(userActivities.prefix(5)) { activity in
+                                ForEach(viewModel.userActivities.prefix(5)) { activity in
                                     NavigationLink(destination: ActivityDetailView(activity: activity)) {
                                         HStack(spacing: 12) {
                                             Image(systemName: activity.activityType.icon)
@@ -163,7 +156,7 @@ struct ProfileTab: View {
                                                         .lineLimit(1)
                                                 }
 
-                                                Text(formatDate(activity.timestamp))
+                                                Text(viewModel.formatDate(activity.timestamp))
                                                     .font(.caption2)
                                                     .foregroundColor(.secondary)
                                             }
@@ -226,53 +219,8 @@ struct ProfileTab: View {
             }
             .navigationTitle("Profile")
             .onAppear {
-                loadUserProfile()
+                viewModel.loadUserProfile()
             }
         }
-    }
-
-    private func loadUserProfile() {
-        // TODO: Fetch current user from Supabase Auth
-        // - Get authenticated user session
-        // - Load user profile data
-        // supabaseClient.auth.session?.user
-
-        // TODO: Fetch user's activities from Supabase
-        // - Query activities table filtered by user_id
-        // - Sort by timestamp descending
-        // - Limit to recent activities (e.g., last 20)
-        // let activities = supabaseClient
-        //     .from("activities")
-        //     .select()
-        //     .eq("user_id", currentUser.id)
-        //     .order("timestamp", ascending: false)
-        //     .limit(20)
-
-        // TODO: Calculate streak
-        // - Query activities grouped by date
-        // - Count consecutive days with activities
-        // - Update currentStreak state
-
-        // TODO: Calculate total activities count
-        // - Count total activities for user
-        // - Update totalActivities state
-
-        // TODO: Fetch earned badges
-        // - Query user_badges table
-        // - Or calculate based on achievements
-        // - Update badges state
-
-        // Load data from ActivityStore
-        userActivities = activityStore.getActivitiesForUser(currentUser)
-        totalActivities = userActivities.count
-        currentStreak = 3 // Placeholder - TODO: Calculate actual streak
-        badges = [] // Empty for now
-    }
-
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
     }
 }

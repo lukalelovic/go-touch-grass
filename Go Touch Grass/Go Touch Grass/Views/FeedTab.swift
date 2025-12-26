@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct FeedTab: View {
-    @StateObject private var activityStore = ActivityStore.shared
+    @StateObject private var viewModel = FeedViewModel()
 
     var body: some View {
         NavigationStack {
@@ -16,7 +16,7 @@ struct FeedTab: View {
                 Color(red: 0.85, green: 0.93, blue: 0.85)
                     .ignoresSafeArea()
 
-                List(activityStore.activities) { activity in
+                List(viewModel.activities) { activity in
                     NavigationLink(destination: ActivityDetailView(activity: activity)) {
                         ActivityRowView(activity: activity)
                     }
@@ -26,6 +26,9 @@ struct FeedTab: View {
                 .scrollContentBackground(.hidden)
             }
             .navigationTitle("Feed")
+            .onAppear {
+                viewModel.loadActivities()
+            }
         }
     }
 }
