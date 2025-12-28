@@ -89,7 +89,8 @@ Goal: Introduce MVVM without overengineering
 Goal: Replace fake data with real persistence
 
 #### Supabase Setup
-- [ ] Create Supabase project
+- [x] Create Supabase project
+- [x] Choose free tier to start
 - [ ] Set hard spending limit
 - [ ] Enable email or anonymous auth
 - [ ] Add Supabase Swift SDK
@@ -100,10 +101,11 @@ Goal: Replace fake data with real persistence
 - [ ] Handle logged-out
 
 #### Database Architecture
-- [ ] User database objects
-- [ ] Activity database objects
-- [ ] Activity types table
-- [ ] Activity subtypes
+- [x] User database objects
+- [x] Activity database objects
+- [x] Activity types table
+- [x] Activity subtypes
+- [x] Activity likes
 
 ### Phase 4 - Fully Fledged Features
 
