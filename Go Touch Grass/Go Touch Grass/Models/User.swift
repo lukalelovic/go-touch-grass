@@ -12,21 +12,23 @@ struct User: Identifiable {
     let id: UUID
     let username: String
     let email: String?
+    let profilePictureUrl: String?
 
-    init(id: UUID = UUID(), username: String, email: String? = nil) {
+    init(id: UUID = UUID(), username: String, email: String? = nil, profilePictureUrl: String? = nil) {
         self.id = id
         self.username = username
         self.email = email
+        self.profilePictureUrl = profilePictureUrl
     }
 }
 
 // MARK: - Sample Data
 extension User {
     static let sampleUsers = [
-        User(username: "outdoor_enthusiast"),
-        User(username: "trail_runner"),
-        User(username: "nature_lover"),
-        User(username: "adventure_seeker"),
-        User(username: "mountain_climber")
+        User(username: "outdoor_enthusiast", profilePictureUrl: "person.circle.fill"),
+        User(username: "trail_runner", profilePictureUrl: "figure.run.circle.fill"),
+        User(username: "nature_lover", profilePictureUrl: "leaf.circle.fill"),
+        User(username: "adventure_seeker", profilePictureUrl: "mountain.2.circle.fill"),
+        User(username: "mountain_climber", profilePictureUrl: "figure.hiking.circle.fill")
     ]
 }

@@ -3,7 +3,14 @@
 -- Used in a Supabase Project
 -- In Supabase, ensure RLS is enabled for created tables.
 
--- To setup locally instead, you can run: 
+-- SUPABASE STORAGE SETUP:
+-- 1. Create a storage bucket named "avatars" in Supabase Dashboard
+-- 2. Set bucket to public or configure RLS policies as needed
+-- 3. Recommended path structure: avatars/<user-id>/profile.jpg
+-- 4. File upload size limit: 2MB recommended for profile pictures
+-- 5. Allowed MIME types: image/jpeg, image/png, image/webp
+
+-- To setup locally instead, you can run:
 -- psql -U your_username -d go_touch_grass -f schema.sql
 
 -- Enable UUID extension
@@ -23,6 +30,13 @@ CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE,
+
+    -- Profile picture stored as URL to Supabase Storage
+    -- Best practice: Store images in Supabase Storage bucket, reference by URL
+    -- Path format: <bucket-name>/avatars/<user-id>/<filename>
+    -- Example: avatars/550e8400-e29b-41d4-a716-446655440000/profile.jpg
+    profile_picture_url TEXT,
+
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 

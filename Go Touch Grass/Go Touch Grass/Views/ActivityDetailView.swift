@@ -21,7 +21,13 @@ struct ActivityDetailView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 12) {
                         // User and activity info
-                        HStack {
+                        HStack(spacing: 12) {
+                            // Profile picture
+                            ProfilePictureView(
+                                profilePictureUrl: activity.user.profilePictureUrl,
+                                size: 56
+                            )
+
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(activity.user.username)
                                     .font(.title2)

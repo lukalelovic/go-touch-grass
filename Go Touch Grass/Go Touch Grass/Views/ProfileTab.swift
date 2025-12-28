@@ -20,15 +20,11 @@ struct ProfileTab: View {
                     VStack(spacing: 20) {
                         // User Info Card
                         VStack(spacing: 12) {
-                            // Profile Picture Placeholder
-                            Circle()
-                                .fill(Color(red: 0.2, green: 0.3, blue: 0.2))
-                                .frame(width: 100, height: 100)
-                                .overlay(
-                                    Image(systemName: "person.fill")
-                                        .font(.system(size: 50))
-                                        .foregroundColor(.white.opacity(0.7))
-                                )
+                            // Profile Picture
+                            ProfilePictureView(
+                                profilePictureUrl: viewModel.currentUser.profilePictureUrl,
+                                size: 100
+                            )
 
                             Text(viewModel.currentUser.username)
                                 .font(.title2)

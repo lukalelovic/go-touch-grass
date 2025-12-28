@@ -13,7 +13,13 @@ struct ActivityRowView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
+            HStack(spacing: 12) {
+                // Profile picture
+                ProfilePictureView(
+                    profilePictureUrl: activity.user.profilePictureUrl,
+                    size: 44
+                )
+
                 // User info
                 VStack(alignment: .leading, spacing: 4) {
                     Text(activity.user.username)
