@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum Environment {
+enum AppConfig {
     private static let envPath = ProcessInfo.processInfo.environment["ENV_PATH"] ?? ""
 
     static var supabaseURL: String {

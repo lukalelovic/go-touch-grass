@@ -65,6 +65,7 @@
 			);
 			name = "Go Touch Grass";
 			packageProductDependencies = (
+				B7C47A522F0197A00057CE94 /* Supabase */,
 			);
 			productName = "Go Touch Grass";
 			productReference = B7A180142EF8F14000F97413 /* Go Touch Grass.app */;
@@ -94,6 +95,9 @@
 			);
 			mainGroup = B7A1800B2EF8F14000F97413;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				B7C47A512F0197880057CE94 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B7A180152EF8F14000F97413 /* Products */;
 			projectDirPath = "";
@@ -328,6 +332,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		B7C47A512F0197880057CE94 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase-community/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B7C47A522F0197A00057CE94 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B7C47A512F0197880057CE94 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B7A1800C2EF8F14000F97413 /* Project object */;
 }
