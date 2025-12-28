@@ -2,7 +2,7 @@
 
 A new iOS social media and personal tracking app for all activities done outside.
 
-Limited to *three* activity posts per day to prevent spam, and to also get off the app and actually do some activities (this also helps rate limit users).
+Limited to *one* activity post per day to prevent spam, and encourage getting off the app and actually doing some activities (this also helps rate limit users and with pricing). Users on an eventual 'Pro' tier can post unlimited 'Touch Grass' activities per day.
 
 Follow your friends to see what they are up to outside, and track your own activities. Earn badges for each new type of activity you do, and earn levels in each type that you're persistent in.
 
@@ -130,3 +130,15 @@ Goal: Replace fake data with real persistence
 - [ ] Badges
 - [ ] Badge levels
 - [ ] Settings page (change username, delete account, export activities)
+
+### Phase 5 - App Rollout
+
+### Free and Pro-Tiers
+- [ ] Pro-tier pricing and ecommerce logic
+- [ ] Support unlimited activity posts per day based on a user's tier
+- [ ] Event recommendations based on a user's preferred/most common activities
+
+### iOS publication
+- [ ] Terms of Service, privacy policy, risk warnings
+- [ ] iOS page
+- [ ] App logo
