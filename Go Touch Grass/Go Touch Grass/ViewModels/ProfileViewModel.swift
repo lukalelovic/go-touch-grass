@@ -15,6 +15,10 @@ class ProfileViewModel: ObservableObject {
     @Published var currentStreak: Int = 0
     @Published var totalActivities: Int = 0
 
+    // Follow counts
+    @Published var followerCount: Int = 0
+    @Published var followingCount: Int = 0
+
     // New badge and level properties
     @Published var userStats: UserStats?
     @Published var levelInfo: UserLevelInfo?
@@ -67,6 +71,20 @@ class ProfileViewModel: ObservableObject {
 
         // Load badges
         loadBadges()
+
+        // Load follower/following counts
+        loadFollowCounts()
+    }
+
+    func loadFollowCounts() {
+        // TODO: Query follower and following counts from Supabase
+        // - SELECT get_follower_count(currentUser.id)
+        // - SELECT get_following_count(currentUser.id)
+        // Or use the user_stats view which includes these counts
+        //
+        // For now, using placeholder data
+        followerCount = 0
+        followingCount = 0
     }
 
     func calculateStreak() {

@@ -22,24 +22,31 @@ struct ActivityDetailView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         // User and activity info
                         HStack(spacing: 12) {
-                            // Profile picture
-                            ProfilePictureView(
-                                profilePictureUrl: activity.user.profilePictureUrl,
-                                size: 56
-                            )
+                            // Tappable user profile section
+                            NavigationLink(destination: UserProfileView(user: activity.user, isCurrentUser: false)) {
+                                HStack(spacing: 12) {
+                                    // Profile picture
+                                    ProfilePictureView(
+                                        profilePictureUrl: activity.user.profilePictureUrl,
+                                        size: 56
+                                    )
 
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(activity.user.username)
-                                    .font(.title2)
-                                    .fontWeight(.bold)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(activity.user.username)
+                                            .font(.title2)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.primary)
 
-                                HStack(spacing: 6) {
-                                    Image(systemName: activity.activityType.icon)
-                                    Text(activity.activityType.rawValue)
+                                        HStack(spacing: 6) {
+                                            Image(systemName: activity.activityType.icon)
+                                            Text(activity.activityType.rawValue)
+                                        }
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                    }
                                 }
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
                             }
+                            .buttonStyle(.plain)
 
                             Spacer()
 

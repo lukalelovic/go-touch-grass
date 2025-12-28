@@ -35,6 +35,27 @@ struct ProfileTab: View {
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                             }
+
+                            // Follower/Following counts
+                            HStack(spacing: 24) {
+                                VStack(spacing: 4) {
+                                    Text("\(viewModel.followerCount)")
+                                        .font(.title3)
+                                        .fontWeight(.bold)
+                                    Text("Followers")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+
+                                VStack(spacing: 4) {
+                                    Text("\(viewModel.followingCount)")
+                                        .font(.title3)
+                                        .fontWeight(.bold)
+                                    Text("Following")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
                         }
                         .padding()
                         .frame(maxWidth: .infinity)

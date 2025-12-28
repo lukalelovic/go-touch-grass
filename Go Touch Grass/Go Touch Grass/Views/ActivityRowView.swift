@@ -14,26 +14,32 @@ struct ActivityRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 12) {
-                // Profile picture
-                ProfilePictureView(
-                    profilePictureUrl: activity.user.profilePictureUrl,
-                    size: 44
-                )
+                // Tappable user profile section
+                NavigationLink(destination: UserProfileView(user: activity.user, isCurrentUser: false)) {
+                    HStack(spacing: 12) {
+                        // Profile picture
+                        ProfilePictureView(
+                            profilePictureUrl: activity.user.profilePictureUrl,
+                            size: 44
+                        )
 
-                // User info
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(activity.user.username)
-                        .font(.headline)
-                        .foregroundColor(.white)
+                        // User info
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(activity.user.username)
+                                .font(.headline)
+                                .foregroundColor(.white)
 
-                    HStack(spacing: 4) {
-                        Image(systemName: activity.activityType.icon)
-                            .font(.caption)
-                        Text(activity.activityType.rawValue)
-                            .font(.subheadline)
+                            HStack(spacing: 4) {
+                                Image(systemName: activity.activityType.icon)
+                                    .font(.caption)
+                                Text(activity.activityType.rawValue)
+                                    .font(.subheadline)
+                            }
+                            .foregroundColor(.white.opacity(0.8))
+                        }
                     }
-                    .foregroundColor(.white.opacity(0.8))
                 }
+                .buttonStyle(.plain)
 
                 Spacer()
 

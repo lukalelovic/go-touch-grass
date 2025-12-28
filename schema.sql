@@ -50,6 +50,30 @@ CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_email ON users(email);
 
 -- ============================================================================
+-- USER FOLLOWS TABLE (Following/Follower Relationships)
+-- ============================================================================
+-- This junction table tracks who follows whom
+-- follower_id follows following_id
+-- Example: If Alice follows Bob, then follower_id = Alice's ID, following_id = Bob's ID
+CREATE TABLE user_follows (
+    id SERIAL PRIMARY KEY,
+    follower_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    following_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    -- Prevent self-following
+    CONSTRAINT no_self_follow CHECK (follower_id != following_id),
+
+    -- Ensure one follow relationship per pair
+    CONSTRAINT unique_follow UNIQUE(follower_id, following_id)
+);
+
+-- Indexes for efficient follow queries
+CREATE INDEX idx_user_follows_follower_id ON user_follows(follower_id);
+CREATE INDEX idx_user_follows_following_id ON user_follows(following_id);
+CREATE INDEX idx_user_follows_created_at ON user_follows(created_at DESC);
+
+-- ============================================================================
 -- ACTIVITY TYPES TABLE
 -- ============================================================================
 CREATE TABLE activity_types (
@@ -154,14 +178,18 @@ CREATE INDEX idx_activity_likes_user_id ON activity_likes(user_id);
 -- VIEWS FOR CONVENIENT QUERYING
 -- ============================================================================
 
--- View to get activity feed with like counts
-CREATE OR REPLACE VIEW activities_with_stats 
+-- Drop existing view first to avoid column order conflicts
+DROP VIEW IF EXISTS activities_with_stats CASCADE;
+
+-- View to get activity feed with like counts and user profile info
+CREATE VIEW activities_with_stats
 with (security_invoker = on) AS
 SELECT
     a.id,
     a.user_id,
     u.username,
     u.email,
+    u.profile_picture_url,
     a.activity_type_id,
     at.name AS activity_type_name,
     at.icon AS activity_type_icon,
@@ -181,12 +209,88 @@ JOIN activity_types at ON a.activity_type_id = at.id
 LEFT JOIN activity_subtypes ast ON a.activity_subtype_id = ast.id
 LEFT JOIN activity_likes al ON a.id = al.activity_id
 GROUP BY
-    a.id, u.id, u.username, u.email,
+    a.id, u.id, u.username, u.email, u.profile_picture_url,
     at.id, at.name, at.icon,
     ast.id, ast.name,
     a.notes, a.timestamp, a.location_latitude,
     a.location_longitude, a.location_name,
     a.created_at, a.updated_at;
+
+-- ============================================================================
+-- USER FOLLOW FUNCTIONS
+-- ============================================================================
+
+-- Function to toggle follow (follow if not following, unfollow if following)
+CREATE OR REPLACE FUNCTION toggle_user_follow(
+    p_follower_id UUID,
+    p_following_id UUID
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_exists BOOLEAN;
+BEGIN
+    -- Prevent self-follow
+    IF p_follower_id = p_following_id THEN
+        RAISE EXCEPTION 'Users cannot follow themselves';
+    END IF;
+
+    -- Check if follow exists
+    SELECT EXISTS(
+        SELECT 1 FROM user_follows
+        WHERE follower_id = p_follower_id AND following_id = p_following_id
+    ) INTO v_exists;
+
+    IF v_exists THEN
+        -- Unfollow: Remove the follow
+        DELETE FROM user_follows
+        WHERE follower_id = p_follower_id AND following_id = p_following_id;
+        RETURN FALSE; -- Indicates unfollowed
+    ELSE
+        -- Follow: Add the follow
+        INSERT INTO user_follows (follower_id, following_id)
+        VALUES (p_follower_id, p_following_id);
+        RETURN TRUE; -- Indicates followed
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to check if user A is following user B
+CREATE OR REPLACE FUNCTION is_following(
+    p_follower_id UUID,
+    p_following_id UUID
+)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS(
+        SELECT 1 FROM user_follows
+        WHERE follower_id = p_follower_id AND following_id = p_following_id
+    );
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get follower count for a user
+CREATE OR REPLACE FUNCTION get_follower_count(p_user_id UUID)
+RETURNS INTEGER AS $$
+BEGIN
+    RETURN (
+        SELECT COUNT(*)
+        FROM user_follows
+        WHERE following_id = p_user_id
+    )::INTEGER;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get following count for a user
+CREATE OR REPLACE FUNCTION get_following_count(p_user_id UUID)
+RETURNS INTEGER AS $$
+BEGIN
+    RETURN (
+        SELECT COUNT(*)
+        FROM user_follows
+        WHERE follower_id = p_user_id
+    )::INTEGER;
+END;
+$$ LANGUAGE plpgsql;
 
 -- ============================================================================
 -- FUNCTIONS
@@ -331,8 +435,13 @@ CREATE INDEX idx_badges_category ON badges(category);
 -- BADGE AND LEVEL VIEWS
 -- ============================================================================
 
+-- Drop existing views first to avoid column order conflicts
+DROP VIEW IF EXISTS user_stats CASCADE;
+DROP VIEW IF EXISTS user_current_levels CASCADE;
+DROP VIEW IF EXISTS user_badge_progress CASCADE;
+
 -- View to calculate user statistics for badge/level calculations
-CREATE OR REPLACE VIEW user_stats
+CREATE VIEW user_stats
 with (security_invoker = on) AS
 WITH activity_type_counts AS (
     SELECT
@@ -363,6 +472,8 @@ SELECT
     -- Social statistics
     COUNT(DISTINCT al_received.id) AS total_likes_received,
     COUNT(DISTINCT al_given.id) AS total_likes_given,
+    COUNT(DISTINCT followers.id) AS follower_count,
+    COUNT(DISTINCT following.id) AS following_count,
 
     -- Dates for streak calculation
     MAX(a.timestamp) AS last_activity_date,
@@ -374,11 +485,13 @@ FROM users u
     LEFT JOIN activities a ON u.id = a.user_id
     LEFT JOIN activity_likes al_received ON a.id = al_received.activity_id
     LEFT JOIN activity_likes al_given ON u.id = al_given.user_id
+    LEFT JOIN user_follows followers ON u.id = followers.following_id
+    LEFT JOIN user_follows following ON u.id = following.follower_id
     LEFT JOIN user_badges ub ON u.id = ub.user_id
 GROUP BY u.id, u.username, u.created_at;
 
 -- View to calculate user current level and milestones
-CREATE OR REPLACE VIEW user_current_levels
+CREATE VIEW user_current_levels
 with (security_invoker = on) AS
 SELECT
     us.user_id,
@@ -425,7 +538,7 @@ LEFT JOIN level_milestones next_milestone ON next_milestone.id = (
 );
 
 -- View to show user badge progress (unlocked and locked)
-CREATE OR REPLACE VIEW user_badge_progress
+CREATE VIEW user_badge_progress
 with (security_invoker = on) AS
 SELECT
     u.id AS user_id,
@@ -654,15 +767,102 @@ WHERE a.notes LIKE '%sunrise%'
   AND u.username != (SELECT username FROM users WHERE id = a.user_id)
 LIMIT 3;
 
+-- Add some sample follow relationships
+-- outdoor_enthusiast follows trail_runner and nature_lover
+INSERT INTO user_follows (follower_id, following_id) VALUES
+    (
+        (SELECT id FROM users WHERE username = 'outdoor_enthusiast'),
+        (SELECT id FROM users WHERE username = 'trail_runner')
+    ),
+    (
+        (SELECT id FROM users WHERE username = 'outdoor_enthusiast'),
+        (SELECT id FROM users WHERE username = 'nature_lover')
+    ),
+    (
+        (SELECT id FROM users WHERE username = 'trail_runner'),
+        (SELECT id FROM users WHERE username = 'outdoor_enthusiast')
+    ),
+    (
+        (SELECT id FROM users WHERE username = 'nature_lover'),
+        (SELECT id FROM users WHERE username = 'adventure_seeker')
+    ),
+    (
+        (SELECT id FROM users WHERE username = 'mountain_climber'),
+        (SELECT id FROM users WHERE username = 'outdoor_enthusiast')
+    );
+
 -- ============================================================================
 -- USEFUL QUERIES (Documentation)
 -- ============================================================================
 
--- Get activity feed ordered by timestamp
--- SELECT * FROM activities_with_stats ORDER BY timestamp DESC;
+-- ============================================================================
+-- FEED QUERIES (Private - Only show activities from followed users)
+-- ============================================================================
 
--- Get activities by a specific user
+-- Get personalized activity feed for a user (only shows activities from users they follow)
+-- This is the main query for the Feed tab - shows only followed users' activities
+-- SELECT * FROM activities_with_stats
+-- WHERE user_id IN (
+--     SELECT following_id FROM user_follows WHERE follower_id = 'current-user-uuid-here'
+-- )
+-- ORDER BY timestamp DESC
+-- LIMIT 50;
+
+-- Alternative: Get feed with user's own activities included
+-- SELECT * FROM activities_with_stats
+-- WHERE user_id IN (
+--     SELECT following_id FROM user_follows WHERE follower_id = 'current-user-uuid-here'
+--     UNION
+--     SELECT 'current-user-uuid-here'
+-- )
+-- ORDER BY timestamp DESC
+-- LIMIT 50;
+
+-- Get activities by a specific user (for profile view)
 -- SELECT * FROM activities_with_stats WHERE user_id = 'user-uuid-here' ORDER BY timestamp DESC;
+
+-- ============================================================================
+-- FOLLOWING/FOLLOWER QUERIES
+-- ============================================================================
+
+-- Search for users by username (for finding users to follow)
+-- SELECT id, username, email, profile_picture_url
+-- FROM users
+-- WHERE username ILIKE '%search-term%'
+-- ORDER BY username
+-- LIMIT 20;
+
+-- Toggle follow/unfollow a user
+-- SELECT toggle_user_follow('follower-user-uuid', 'user-to-follow-uuid');
+
+-- Check if user A is following user B
+-- SELECT is_following('user-a-uuid', 'user-b-uuid');
+
+-- Get list of users that a user follows
+-- SELECT u.id, u.username, u.email, u.profile_picture_url, uf.created_at AS followed_at
+-- FROM user_follows uf
+-- JOIN users u ON uf.following_id = u.id
+-- WHERE uf.follower_id = 'user-uuid-here'
+-- ORDER BY uf.created_at DESC;
+
+-- Get list of users that follow a user (followers)
+-- SELECT u.id, u.username, u.email, u.profile_picture_url, uf.created_at AS followed_at
+-- FROM user_follows uf
+-- JOIN users u ON uf.follower_id = u.id
+-- WHERE uf.following_id = 'user-uuid-here'
+-- ORDER BY uf.created_at DESC;
+
+-- Get follower and following counts for a user
+-- SELECT
+--     get_follower_count('user-uuid-here') AS follower_count,
+--     get_following_count('user-uuid-here') AS following_count;
+
+-- Get user profile with stats (includes follower/following counts)
+-- SELECT * FROM user_stats WHERE user_id = 'user-uuid-here';
+
+-- ============================================================================
+-- ACTIVITY LIKE QUERIES
+-- ============================================================================
 
 -- Get like count for an activity
 -- SELECT like_count FROM activities_with_stats WHERE id = 'activity-uuid-here';

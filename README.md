@@ -70,6 +70,12 @@ Goal: App is fully navigable with fake data
 - [x] Activity streak placeholder
 - [x] List of recent activities
 
+#### Search and follow friends
+- [x] Make profiles clickable in the feed and detail view
+- [x] Provide a search by username
+- [x] 'Follow' button
+- [ ] Support public or private profiles (require 'Friendship' requests)
+
 #### Touch Grass Screen
 - [x] Local activities in a user's area (static data for now)
 
@@ -127,7 +133,6 @@ Goal: Replace fake data with real persistence
 
 ### Enhanced Profiles
 - [ ] Public/private access
-- [ ] 'Friendship' requests
 - [ ] Badges
 - [ ] Badge levels
 - [ ] Settings page (change username, pfp, delete account, export activities)
