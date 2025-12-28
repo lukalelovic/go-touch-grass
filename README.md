@@ -106,6 +106,7 @@ Goal: Replace fake data with real persistence
 - [x] Activity types table
 - [x] Activity subtypes
 - [x] Activity likes
+- [x] User badges and levels
 
 ### Phase 4 - Fully Fledged Features
 

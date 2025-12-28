@@ -14,7 +14,13 @@ class ProfileViewModel: ObservableObject {
     @Published var userActivities: [Activity] = []
     @Published var currentStreak: Int = 0
     @Published var totalActivities: Int = 0
-    @Published var badges: [String] = []
+
+    // New badge and level properties
+    @Published var userStats: UserStats?
+    @Published var levelInfo: UserLevelInfo?
+    @Published var badgeProgress: [BadgeProgress] = []
+    @Published var unlockedBadges: [BadgeProgress] = []
+    @Published var lockedBadges: [BadgeProgress] = []
 
     private let activityStore: ActivityStore
     private var cancellables = Set<AnyCancellable>()
@@ -53,6 +59,12 @@ class ProfileViewModel: ObservableObject {
         // Calculate streak
         calculateStreak()
 
+        // Load stats from database
+        loadUserStats()
+
+        // Load level info
+        loadLevelInfo()
+
         // Load badges
         loadBadges()
     }
@@ -83,19 +95,107 @@ class ProfileViewModel: ObservableObject {
         currentStreak = 3
     }
 
-    func loadBadges() {
-        // TODO: Fetch earned badges
-        // - Query user_badges table from Supabase
-        // - Or calculate based on achievements
-        // - Update badges array
+    func loadUserStats() {
+        // TODO: Query user_stats view from Supabase
+        // - SELECT * FROM user_stats WHERE user_id = currentUser.id
+        // - Parse JSONB activities_by_type field
+        // - Update userStats property
         //
-        // Example achievements:
-        // - First activity: "Grass Toucher"
-        // - 10 activities: "Nature Explorer"
-        // - 7 day streak: "Committed"
-        // - Try all activity types: "Versatile"
+        // For now, use sample data
+        // userStats = UserStats.sampleStats
+    }
 
-        badges = []
+    func loadLevelInfo() {
+        // TODO: Query user_current_levels view from Supabase
+        // - SELECT * FROM user_current_levels WHERE user_id = currentUser.id
+        // - This view calculates current level, milestone info, and progress
+        // - Update levelInfo property
+        //
+        // Example query result includes:
+        // - current_level (equals total activities)
+        // - current_milestone_level, milestone_name, milestone_icon
+        // - next_milestone_level, next_milestone_name
+        // - activities_to_next_milestone, progress_to_next_milestone
+        //
+        // For now, calculate locally from activities
+        let totalActivities = userActivities.count
+        let currentMilestone = LevelMilestone.milestoneFor(level: totalActivities)
+        let nextMilestone = LevelMilestone.nextMilestoneFor(level: totalActivities)
+
+        let activitiesToNext = (nextMilestone?.milestoneLevel ?? 0) - totalActivities
+        let progressPercent: Double
+        if let current = currentMilestone, let next = nextMilestone {
+            let range = Double(next.milestoneLevel - current.milestoneLevel)
+            let completed = Double(totalActivities - current.milestoneLevel)
+            progressPercent = (completed / range) * 100
+        } else if nextMilestone != nil {
+            progressPercent = Double(totalActivities) / Double(nextMilestone!.milestoneLevel) * 100
+        } else {
+            progressPercent = 100
+        }
+
+        levelInfo = UserLevelInfo(
+            userId: currentUser.id,
+            username: currentUser.username,
+            totalActivities: totalActivities,
+            currentLevel: max(totalActivities, 1),
+            currentMilestoneLevel: currentMilestone?.milestoneLevel,
+            milestoneName: currentMilestone?.name,
+            milestoneDescription: currentMilestone?.description,
+            milestoneIcon: currentMilestone?.icon,
+            nextMilestoneLevel: nextMilestone?.milestoneLevel,
+            nextMilestoneName: nextMilestone?.name,
+            nextMilestoneIcon: nextMilestone?.icon,
+            activitiesToNextMilestone: max(activitiesToNext, 0),
+            progressToNextMilestone: progressPercent
+        )
+    }
+
+    func loadBadges() {
+        // TODO: Query user_badge_progress view from Supabase
+        // - SELECT * FROM user_badge_progress WHERE user_id = currentUser.id
+        // - This view returns all badges with is_unlocked flag
+        // - Update badgeProgress, unlockedBadges, and lockedBadges
+        //
+        // Example query:
+        // let response = await supabase
+        //     .from("user_badge_progress")
+        //     .select("*")
+        //     .eq("user_id", currentUser.id)
+        //     .order("is_unlocked", ascending: false)
+        //     .order("display_order", ascending: true)
+        //
+        // For now, use sample data
+        let allBadges = Badge.sampleBadges.map { badge in
+            // Simple logic: unlock if criteria is met
+            let isUnlocked = checkBadgeCriteria(badge)
+            return BadgeProgress(
+                badge: badge,
+                isUnlocked: isUnlocked,
+                unlockedAt: isUnlocked ? Date() : nil,
+                progress: nil
+            )
+        }
+
+        badgeProgress = allBadges
+        unlockedBadges = allBadges.filter { $0.isUnlocked }
+        lockedBadges = allBadges.filter { !$0.isUnlocked }
+    }
+
+    private func checkBadgeCriteria(_ badge: Badge) -> Bool {
+        // Simple local check - in production, this would come from the database
+        switch badge.criteria.type {
+        case "total_activities":
+            return totalActivities >= (badge.criteria.count ?? 0)
+        case "specific_activity":
+            // Would need to count activities by type
+            return false
+        case "likes_received", "likes_given":
+            // Would need to query likes
+            return false
+        default:
+            return false
+        }
     }
 
     func logout() {
