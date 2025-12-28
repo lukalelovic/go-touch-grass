@@ -93,12 +93,13 @@ Goal: Replace fake data with real persistence
 - [x] Choose free tier to start
 - [ ] Set hard spending limit
 - [ ] Enable email or anonymous auth
-- [ ] Add Supabase Swift SDK
+- [x] Add Supabase Swift SDK
+- [ ] Connect views/models to supabase via PostgREST
 
 #### Auth
-- [ ] Apple, phone, or email sign-in
+- [ ] Apple sign-in
 - [ ] Store user session
-- [ ] Handle logged-out
+- [ ] Handle log out
 
 #### Database Architecture
 - [x] User database objects
@@ -129,7 +130,7 @@ Goal: Replace fake data with real persistence
 - [ ] 'Friendship' requests
 - [ ] Badges
 - [ ] Badge levels
-- [ ] Settings page (change username, delete account, export activities)
+- [ ] Settings page (change username, pfp, delete account, export activities)
 
 ### Phase 5 - App Rollout
 
