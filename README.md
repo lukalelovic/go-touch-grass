@@ -74,7 +74,14 @@ Goal: App is fully navigable with fake data
 - [x] Make profiles clickable in the feed and detail view
 - [x] Provide a search by username
 - [x] 'Follow' button
-- [ ] Support public or private profiles (require 'Friendship' requests)
+
+### Enhanced Profiles
+- [ ] Public/private access
+- [x] Badges
+- [x] Badge levels
+- [ ] Settings page (change username, pfp, delete account, export activities)
+- [x] Dark mode
+- [ ] Require 'Friendship' requests to follow
 
 #### Touch Grass Screen
 - [x] Local activities in a user's area (static data for now)
@@ -115,9 +122,7 @@ Goal: Replace fake data with real persistence
 - [x] Activity likes
 - [x] User badges and levels
 
-### Phase 4 - Fully Fledged Features
-
-#### More Activity Types
+#### More Database Activity Types
 - [ ] Gym with subtypes (Push, Pull, Leg, Cardio)
 - [ ] Cooking Class
 - [ ] Dinner
@@ -128,14 +133,7 @@ Goal: Replace fake data with real persistence
 - [ ] Soccer
 - [ ] Groceries
 - [ ] Cleaning
-- [ ] Coffee
-- [ ] Etc
-
-### Enhanced Profiles
-- [ ] Public/private access
-- [ ] Badges
-- [ ] Badge levels
-- [ ] Settings page (change username, pfp, delete account, export activities)
+- [ ] Coffee (possible subtypes)
 
 ### Phase 5 - App Rollout
 

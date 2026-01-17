@@ -12,10 +12,13 @@ struct UserSearchView: View {
     @State private var searchText: String = ""
     @State private var searchResults: [User] = []
     @State private var isSearching: Bool = false
+    @EnvironmentObject var themeManager: ThemeManager
 
     var body: some View {
+        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+
         ZStack {
-            Color(red: 0.85, green: 0.93, blue: 0.85)
+            colors.primaryBackground
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -24,26 +27,26 @@ struct UserSearchView: View {
                     VStack(spacing: 12) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 48))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(colors.secondaryText)
                         Text("No users found")
                             .font(.headline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(colors.secondaryText)
                         Text("Try searching for a different username")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(colors.secondaryText)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if searchResults.isEmpty && searchText.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "person.2.fill")
                             .font(.system(size: 48))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(colors.secondaryText)
                         Text("Search for users")
                             .font(.headline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(colors.secondaryText)
                         Text("Find friends by their username")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(colors.secondaryText)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
@@ -58,23 +61,24 @@ struct UserSearchView: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(user.username)
                                         .font(.headline)
+                                        .foregroundColor(colors.primaryText)
 
                                     if let email = user.email {
                                         Text(email)
                                             .font(.caption)
-                                            .foregroundColor(.secondary)
+                                            .foregroundColor(colors.secondaryText)
                                     }
                                 }
 
                                 Spacer()
 
                                 Image(systemName: "chevron.right")
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(colors.secondaryText)
                                     .font(.caption)
                             }
                             .padding(.vertical, 4)
                         }
-                        .listRowBackground(Color.white.opacity(0.5))
+                        .listRowBackground(colors.cardBackground)
                     }
                     .listStyle(.plain)
                     .scrollContentBackground(.hidden)

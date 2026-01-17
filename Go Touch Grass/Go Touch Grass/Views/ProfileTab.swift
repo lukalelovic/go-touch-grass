@@ -9,11 +9,14 @@ import SwiftUI
 
 struct ProfileTab: View {
     @StateObject private var viewModel = ProfileViewModel()
+    @EnvironmentObject var themeManager: ThemeManager
 
     var body: some View {
+        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+
         NavigationStack {
             ZStack {
-                Color(red: 0.85, green: 0.93, blue: 0.85)
+                colors.primaryBackground
                     .ignoresSafeArea()
 
                 ScrollView {
@@ -29,11 +32,12 @@ struct ProfileTab: View {
                             Text(viewModel.currentUser.username)
                                 .font(.title2)
                                 .fontWeight(.bold)
+                                .foregroundColor(colors.primaryText)
 
                             if let email = viewModel.currentUser.email {
                                 Text(email)
                                     .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(colors.secondaryText)
                             }
 
                             // Follower/Following counts
@@ -42,24 +46,26 @@ struct ProfileTab: View {
                                     Text("\(viewModel.followerCount)")
                                         .font(.title3)
                                         .fontWeight(.bold)
+                                        .foregroundColor(colors.primaryText)
                                     Text("Followers")
                                         .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(colors.secondaryText)
                                 }
 
                                 VStack(spacing: 4) {
                                     Text("\(viewModel.followingCount)")
                                         .font(.title3)
                                         .fontWeight(.bold)
+                                        .foregroundColor(colors.primaryText)
                                     Text("Following")
                                         .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(colors.secondaryText)
                                 }
                             }
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(Color.white.opacity(0.5))
+                        .background(colors.cardBackground)
                         .cornerRadius(16)
 
                         // Level Card
@@ -69,16 +75,17 @@ struct ProfileTab: View {
                                     if let icon = levelInfo.milestoneIcon {
                                         Image(systemName: icon)
                                             .font(.system(size: 40))
-                                            .foregroundColor(Color(red: 0.2, green: 0.5, blue: 0.2))
+                                            .foregroundColor(colors.accentDark)
                                     }
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("Level \(levelInfo.currentLevel)")
                                             .font(.title)
                                             .fontWeight(.bold)
+                                            .foregroundColor(colors.primaryText)
                                         if let milestoneName = levelInfo.milestoneName {
                                             Text(milestoneName)
                                                 .font(.headline)
-                                                .foregroundColor(.secondary)
+                                                .foregroundColor(colors.secondaryText)
                                         }
                                     }
                                     Spacer()
@@ -90,21 +97,22 @@ struct ProfileTab: View {
                                         HStack {
                                             Text("\(levelInfo.activitiesToNextMilestone) activities to \(nextName)")
                                                 .font(.caption)
-                                                .foregroundColor(.secondary)
+                                                .foregroundColor(colors.secondaryText)
                                             Spacer()
                                             Text("\(Int(levelInfo.progressToNextMilestone))%")
                                                 .font(.caption)
                                                 .fontWeight(.medium)
+                                                .foregroundColor(colors.primaryText)
                                         }
 
                                         ProgressView(value: levelInfo.progressToNextMilestone, total: 100)
-                                            .tint(Color(red: 0.2, green: 0.5, blue: 0.2))
+                                            .tint(colors.accentDark)
                                     }
                                 }
                             }
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(Color.white.opacity(0.5))
+                            .background(colors.cardBackground)
                             .cornerRadius(16)
                         }
 
@@ -112,6 +120,7 @@ struct ProfileTab: View {
                         VStack(spacing: 16) {
                             Text("Stats")
                                 .font(.headline)
+                                .foregroundColor(colors.primaryText)
                                 .frame(maxWidth: .infinity, alignment: .leading)
 
                             HStack(spacing: 16) {
@@ -123,36 +132,38 @@ struct ProfileTab: View {
                                     Text("\(viewModel.currentStreak)")
                                         .font(.title2)
                                         .fontWeight(.bold)
+                                        .foregroundColor(colors.primaryText)
                                     Text("Day Streak")
                                         .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(colors.secondaryText)
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(Color.white.opacity(0.5))
+                                .background(colors.cardBackground)
                                 .cornerRadius(12)
 
                                 // Total Activities
                                 VStack {
                                     Image(systemName: "checkmark.circle.fill")
                                         .font(.system(size: 30))
-                                        .foregroundColor(.green)
+                                        .foregroundColor(colors.accent)
                                     Text("\(viewModel.totalActivities)")
                                         .font(.title2)
                                         .fontWeight(.bold)
+                                        .foregroundColor(colors.primaryText)
                                     Text("Activities")
                                         .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(colors.secondaryText)
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(Color.white.opacity(0.5))
+                                .background(colors.cardBackground)
                                 .cornerRadius(12)
                             }
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(Color.white.opacity(0.3))
+                        .background(colors.secondaryCardBackground)
                         .cornerRadius(16)
 
                         // Badges Section
@@ -160,16 +171,17 @@ struct ProfileTab: View {
                             HStack {
                                 Text("Badges")
                                     .font(.headline)
+                                    .foregroundColor(colors.primaryText)
                                 Spacer()
                                 Text("\(viewModel.unlockedBadges.count)/\(viewModel.badgeProgress.count)")
                                     .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(colors.secondaryText)
                             }
 
                             if viewModel.unlockedBadges.isEmpty {
                                 Text("Complete activities to earn badges!")
                                     .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(colors.secondaryText)
                                     .frame(maxWidth: .infinity, alignment: .center)
                                     .padding()
                             } else {
@@ -199,6 +211,7 @@ struct ProfileTab: View {
 
                                             Text(badgeProgress.badge.name)
                                                 .font(.caption2)
+                                                .foregroundColor(colors.primaryText)
                                                 .multilineTextAlignment(.center)
                                                 .lineLimit(2)
                                         }
@@ -209,10 +222,11 @@ struct ProfileTab: View {
                                 if !viewModel.lockedBadges.isEmpty {
                                     Divider()
                                         .padding(.vertical, 4)
+                                        .background(colors.divider)
 
                                     Text("Locked Badges")
                                         .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(colors.secondaryText)
 
                                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 70))], spacing: 16) {
                                         ForEach(viewModel.lockedBadges.prefix(6)) { badgeProgress in
@@ -236,7 +250,7 @@ struct ProfileTab: View {
 
                                                 Text(badgeProgress.badge.name)
                                                     .font(.caption2)
-                                                    .foregroundColor(.secondary)
+                                                    .foregroundColor(colors.secondaryText)
                                                     .multilineTextAlignment(.center)
                                                     .lineLimit(2)
                                             }
@@ -247,18 +261,19 @@ struct ProfileTab: View {
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(Color.white.opacity(0.3))
+                        .background(colors.secondaryCardBackground)
                         .cornerRadius(16)
 
                         // Recent Activities
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Recent Activities")
                                 .font(.headline)
+                                .foregroundColor(colors.primaryText)
 
                             if viewModel.userActivities.isEmpty {
                                 Text("No activities yet. Go touch grass!")
                                     .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(colors.secondaryText)
                                     .frame(maxWidth: .infinity, alignment: .center)
                                     .padding()
                             } else {
@@ -269,33 +284,33 @@ struct ProfileTab: View {
                                                 .font(.title2)
                                                 .foregroundColor(.white)
                                                 .frame(width: 50, height: 50)
-                                                .background(Color(red: 0.2, green: 0.3, blue: 0.2))
+                                                .background(colors.eventCardBackground)
                                                 .cornerRadius(10)
 
                                             VStack(alignment: .leading, spacing: 4) {
                                                 Text(activity.activityType.rawValue)
                                                     .font(.headline)
-                                                    .foregroundColor(.primary)
+                                                    .foregroundColor(colors.primaryText)
 
                                                 if let notes = activity.notes {
                                                     Text(notes)
                                                         .font(.caption)
-                                                        .foregroundColor(.secondary)
+                                                        .foregroundColor(colors.secondaryText)
                                                         .lineLimit(1)
                                                 }
 
                                                 Text(viewModel.formatDate(activity.timestamp))
                                                     .font(.caption2)
-                                                    .foregroundColor(.secondary)
+                                                    .foregroundColor(colors.secondaryText)
                                             }
 
                                             Spacer()
 
                                             Image(systemName: "chevron.right")
-                                                .foregroundColor(.secondary)
+                                                .foregroundColor(colors.secondaryText)
                                         }
                                         .padding()
-                                        .background(Color.white.opacity(0.5))
+                                        .background(colors.cardBackground)
                                         .cornerRadius(12)
                                     }
                                 }
@@ -303,11 +318,27 @@ struct ProfileTab: View {
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(Color.white.opacity(0.3))
+                        .background(colors.secondaryCardBackground)
                         .cornerRadius(16)
 
                         // Settings/Logout Section
                         VStack(spacing: 12) {
+                            // Dark Mode Toggle
+                            Button(action: {
+                                themeManager.toggleTheme()
+                            }) {
+                                HStack {
+                                    Image(systemName: themeManager.isDarkMode ? "moon.fill" : "sun.max.fill")
+                                    Text(themeManager.isDarkMode ? "Dark Mode" : "Light Mode")
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                }
+                                .foregroundColor(colors.primaryText)
+                                .padding()
+                                .background(colors.cardBackground)
+                                .cornerRadius(12)
+                            }
+
                             Button(action: {
                                 // TODO: Navigate to settings
                             }) {
@@ -317,9 +348,9 @@ struct ProfileTab: View {
                                     Spacer()
                                     Image(systemName: "chevron.right")
                                 }
-                                .foregroundColor(.primary)
+                                .foregroundColor(colors.primaryText)
                                 .padding()
-                                .background(Color.white.opacity(0.5))
+                                .background(colors.cardBackground)
                                 .cornerRadius(12)
                             }
 
@@ -336,7 +367,7 @@ struct ProfileTab: View {
                                 }
                                 .foregroundColor(.red)
                                 .padding()
-                                .background(Color.white.opacity(0.5))
+                                .background(colors.cardBackground)
                                 .cornerRadius(12)
                             }
                         }
@@ -346,6 +377,9 @@ struct ProfileTab: View {
                 }
             }
             .navigationTitle("Profile")
+            .toolbarBackground(colors.primaryBackground, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(themeManager.isDarkMode ? .dark : .light, for: .navigationBar)
             .onAppear {
                 viewModel.loadUserProfile()
             }

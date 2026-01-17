@@ -7,7 +7,11 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var themeManager: ThemeManager
+
     var body: some View {
+        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+
         TabView {
             FeedTab()
                 .tabItem {
@@ -29,10 +33,45 @@ struct ContentView: View {
                     Label("Profile", systemImage: "person.fill")
                 }
         }
-        .tint(Color(red: 0.1, green: 0.6, blue: 0.1))
+        .tint(colors.accent)
+        .onAppear {
+            updateTabBarAppearance(isDarkMode: themeManager.isDarkMode)
+        }
+        .onChange(of: themeManager.isDarkMode) { _, isDarkMode in
+            updateTabBarAppearance(isDarkMode: isDarkMode)
+        }
+    }
+
+    private func updateTabBarAppearance(isDarkMode: Bool) {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+
+        if isDarkMode {
+            appearance.backgroundColor = UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)
+        } else {
+            appearance.backgroundColor = UIColor(red: 0.85, green: 0.93, blue: 0.85, alpha: 1.0)
+        }
+
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+
+        // Force update of all existing tab bars
+        UIApplication.shared.windows.forEach { window in
+            window.allSubviews.compactMap { $0 as? UITabBar }.forEach { tabBar in
+                tabBar.standardAppearance = appearance
+                tabBar.scrollEdgeAppearance = appearance
+            }
+        }
+    }
+}
+
+extension UIView {
+    var allSubviews: [UIView] {
+        subviews + subviews.flatMap { $0.allSubviews }
     }
 }
 
 #Preview {
     ContentView()
+        .environmentObject(ThemeManager.shared)
 }

@@ -9,11 +9,14 @@ import SwiftUI
 
 struct FeedTab: View {
     @StateObject private var viewModel = FeedViewModel()
+    @EnvironmentObject var themeManager: ThemeManager
 
     var body: some View {
+        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+
         NavigationStack {
             ZStack {
-                Color(red: 0.85, green: 0.93, blue: 0.85)
+                colors.primaryBackground
                     .ignoresSafeArea()
 
                 if viewModel.activities.isEmpty {
@@ -21,11 +24,11 @@ struct FeedTab: View {
                     VStack(spacing: 16) {
                         Image(systemName: "leaf.fill")
                             .font(.system(size: 60))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(colors.secondaryText)
 
                         Text("Post your activities or follow your friends to see them listed here!")
                             .font(.headline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(colors.secondaryText)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)
                     }
@@ -41,11 +44,14 @@ struct FeedTab: View {
                 }
             }
             .navigationTitle("Feed")
+            .toolbarBackground(colors.primaryBackground, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(themeManager.isDarkMode ? .dark : .light, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NavigationLink(destination: UserSearchView()) {
                         Image(systemName: "magnifyingglass")
-                            .foregroundColor(.primary)
+                            .foregroundColor(colors.primaryText)
                     }
                 }
             }

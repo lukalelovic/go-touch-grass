@@ -10,11 +10,14 @@ import MapKit
 
 struct TouchGrassTab: View {
     @StateObject private var viewModel = EventViewModel()
+    @EnvironmentObject var themeManager: ThemeManager
 
     var body: some View {
+        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+
         NavigationStack {
             ZStack {
-                Color(red: 0.85, green: 0.93, blue: 0.85)
+                colors.primaryBackground
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
@@ -26,22 +29,22 @@ struct TouchGrassTab: View {
                             HStack {
                                 Image(systemName: "mappin.circle.fill")
                                     .font(.title3)
-                                    .foregroundColor(viewModel.selectedLocation != nil ? Color(red: 0.1, green: 0.6, blue: 0.1) : .gray)
+                                    .foregroundColor(viewModel.selectedLocation != nil ? colors.accent : .gray)
 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Search Location")
                                         .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(colors.secondaryText)
 
                                     if let location = viewModel.selectedLocation {
                                         Text(location.name ?? "Unknown Location")
                                             .font(.subheadline)
                                             .fontWeight(.medium)
-                                            .foregroundColor(.primary)
+                                            .foregroundColor(colors.primaryText)
                                     } else {
                                         Text("Tap to select location")
                                             .font(.subheadline)
-                                            .foregroundColor(.secondary)
+                                            .foregroundColor(colors.secondaryText)
                                     }
                                 }
 
@@ -61,7 +64,7 @@ struct TouchGrassTab: View {
                                 }
                             }
                             .padding()
-                            .background(Color.white.opacity(0.8))
+                            .background(colors.cardBackground)
                             .cornerRadius(12)
                         }
 
@@ -73,7 +76,7 @@ struct TouchGrassTab: View {
                                 Text("Showing events within 50 miles")
                                     .font(.caption)
                             }
-                            .foregroundColor(.secondary)
+                            .foregroundColor(colors.secondaryText)
                         }
                     }
                     .padding()
@@ -84,20 +87,20 @@ struct TouchGrassTab: View {
                             Spacer()
                             Image(systemName: "calendar.badge.exclamationmark")
                                 .font(.system(size: 60))
-                                .foregroundColor(.gray.opacity(0.5))
+                                .foregroundColor(colors.tertiaryText)
                             Text("No events found")
                                 .font(.title3)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(colors.secondaryText)
                             Text("Try selecting a different location")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(colors.secondaryText)
                             Spacer()
                         }
                     } else {
                         ScrollView {
                             LazyVStack(spacing: 12) {
                                 ForEach(viewModel.filteredEvents) { event in
-                                    NavigationLink(destination: LocalEventDetailView(event: event)) {
+                                    NavigationLink(destination: LocalEventDetailView(event: event, themeManager: themeManager)) {
                                         LocalEventRowView(event: event)
                                     }
                                     .buttonStyle(PlainButtonStyle())
@@ -109,6 +112,9 @@ struct TouchGrassTab: View {
                 }
             }
             .navigationTitle("Touch Grass")
+            .toolbarBackground(colors.primaryBackground, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(themeManager.isDarkMode ? .dark : .light, for: .navigationBar)
             .sheet(isPresented: $viewModel.showLocationPicker) {
                 LocationPickerView(selectedLocation: $viewModel.selectedLocation)
             }
@@ -125,15 +131,22 @@ struct LocalEventRowView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Image Placeholder
-            RoundedRectangle(cornerRadius: 0)
-                .fill(Color.gray.opacity(0.3))
-                .overlay(
-                    Image(systemName: event.eventType.icon)
-                        .font(.system(size: 40))
-                        .foregroundColor(.white.opacity(0.7))
-                )
-                .frame(height: 180)
+            // Map Preview
+            Map(position: .constant(.region(MKCoordinateRegion(
+                center: CLLocationCoordinate2D(
+                    latitude: event.location.latitude,
+                    longitude: event.location.longitude
+                ),
+                span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+            )))) {
+                Marker("", coordinate: CLLocationCoordinate2D(
+                    latitude: event.location.latitude,
+                    longitude: event.location.longitude
+                ))
+                .tint(.green)
+            }
+            .frame(height: 180)
+            .allowsHitTesting(false)
 
             // Event Info
             VStack(alignment: .leading, spacing: 8) {
@@ -214,10 +227,13 @@ struct LocalEventRowView: View {
 // MARK: - Local Event Detail View
 struct LocalEventDetailView: View {
     let event: LocalEvent
+    @ObservedObject var themeManager: ThemeManager
 
     var body: some View {
+        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+
         ZStack {
-            Color(red: 0.85, green: 0.93, blue: 0.85)
+            colors.primaryBackground
                 .ignoresSafeArea()
 
             ScrollView {
@@ -238,40 +254,47 @@ struct LocalEventDetailView: View {
                             Text(event.title)
                                 .font(.title)
                                 .fontWeight(.bold)
+                                .foregroundColor(colors.primaryText)
 
                             HStack(spacing: 6) {
                                 Image(systemName: event.eventType.icon)
                                 Text(event.eventType.rawValue)
                             }
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(colors.secondaryText)
                         }
 
                         Divider()
+                            .background(colors.divider)
 
                         // Description
                         VStack(alignment: .leading, spacing: 4) {
                             Text("About")
                                 .font(.headline)
+                                .foregroundColor(colors.primaryText)
                             Text(event.description)
                                 .font(.body)
+                                .foregroundColor(colors.primaryText)
                         }
 
                         // Date & Time
                         VStack(alignment: .leading, spacing: 4) {
                             Text("When")
                                 .font(.headline)
+                                .foregroundColor(colors.primaryText)
                             HStack(spacing: 6) {
                                 Image(systemName: "calendar")
                                 Text(formatFullDate(event.date))
                             }
                             .font(.body)
+                            .foregroundColor(colors.primaryText)
                         }
 
                         // Location with Map
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Location")
                                 .font(.headline)
+                                .foregroundColor(colors.primaryText)
 
                             Map(position: .constant(MapCameraPosition.region(
                                 MKCoordinateRegion(
@@ -296,7 +319,7 @@ struct LocalEventDetailView: View {
                                     Text(locationName)
                                 }
                                 .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(colors.secondaryText)
                             }
                         }
 
@@ -305,10 +328,11 @@ struct LocalEventDetailView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Organizer")
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(colors.secondaryText)
                                 Text(event.organizerName)
                                     .font(.subheadline)
                                     .fontWeight(.medium)
+                                    .foregroundColor(colors.primaryText)
                             }
 
                             Spacer()
@@ -316,14 +340,15 @@ struct LocalEventDetailView: View {
                             VStack(alignment: .trailing, spacing: 4) {
                                 Text("Attending")
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(colors.secondaryText)
                                 Text("\(event.attendeeCount) people")
                                     .font(.subheadline)
                                     .fontWeight(.medium)
+                                    .foregroundColor(colors.primaryText)
                             }
                         }
                         .padding()
-                        .background(Color.white.opacity(0.5))
+                        .background(colors.cardBackground)
                         .cornerRadius(12)
 
                         // Join Button
@@ -341,7 +366,7 @@ struct LocalEventDetailView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color(red: 0.1, green: 0.6, blue: 0.1))
+                            .background(colors.accent)
                             .cornerRadius(12)
                         }
                     }

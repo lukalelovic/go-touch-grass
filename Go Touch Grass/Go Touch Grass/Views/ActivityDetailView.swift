@@ -11,10 +11,13 @@ import MapKit
 struct ActivityDetailView: View {
     let activity: Activity
     @State private var niceCount: Int = 0
+    @EnvironmentObject var themeManager: ThemeManager
 
     var body: some View {
+        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+
         ZStack {
-            Color(red: 0.85, green: 0.93, blue: 0.85)
+            colors.primaryBackground
                 .ignoresSafeArea()
 
             ScrollView {
@@ -35,14 +38,14 @@ struct ActivityDetailView: View {
                                         Text(activity.user.username)
                                             .font(.title2)
                                             .fontWeight(.bold)
-                                            .foregroundColor(.primary)
+                                            .foregroundColor(colors.primaryText)
 
                                         HStack(spacing: 6) {
                                             Image(systemName: activity.activityType.icon)
                                             Text(activity.activityType.rawValue)
                                         }
                                         .font(.subheadline)
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(colors.secondaryText)
                                     }
                                 }
                             }
@@ -52,18 +55,21 @@ struct ActivityDetailView: View {
 
                             Text(formatDate(activity.timestamp))
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(colors.secondaryText)
                         }
 
                         Divider()
+                            .background(colors.divider)
 
                         // Notes / description
                         if let notes = activity.notes {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Notes")
                                     .font(.headline)
+                                    .foregroundColor(colors.primaryText)
                                 Text(notes)
                                     .font(.body)
+                                    .foregroundColor(colors.primaryText)
                             }
                         }
 
@@ -72,6 +78,7 @@ struct ActivityDetailView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Location")
                                     .font(.headline)
+                                    .foregroundColor(colors.primaryText)
 
                                 Map(position: .constant(MapCameraPosition.region(
                                     MKCoordinateRegion(
@@ -96,7 +103,7 @@ struct ActivityDetailView: View {
                                         Text(locationName)
                                     }
                                     .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(colors.secondaryText)
                                 }
                             }
                         }
@@ -116,7 +123,7 @@ struct ActivityDetailView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color(red: 0.0, green: 0.5, blue: 0.0))
+                            .background(colors.accentDark)
                             .cornerRadius(12)
                         }
                     }

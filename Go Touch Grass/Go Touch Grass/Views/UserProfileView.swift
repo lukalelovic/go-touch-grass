@@ -14,10 +14,13 @@ struct UserProfileView: View {
     @State private var followerCount: Int = 0
     @State private var followingCount: Int = 0
     @State private var activities: [Activity] = []
+    @EnvironmentObject var themeManager: ThemeManager
 
     var body: some View {
+        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+
         ZStack {
-            Color(red: 0.85, green: 0.93, blue: 0.85)
+            colors.primaryBackground
                 .ignoresSafeArea()
 
             ScrollView {
@@ -33,11 +36,12 @@ struct UserProfileView: View {
                         Text(user.username)
                             .font(.title2)
                             .fontWeight(.bold)
+                            .foregroundColor(colors.primaryText)
 
                         if let email = user.email {
                             Text(email)
                                 .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(colors.secondaryText)
                         }
 
                         // Follower/Following counts
@@ -46,18 +50,20 @@ struct UserProfileView: View {
                                 Text("\(followerCount)")
                                     .font(.title3)
                                     .fontWeight(.bold)
+                                    .foregroundColor(colors.primaryText)
                                 Text("Followers")
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(colors.secondaryText)
                             }
 
                             VStack(spacing: 4) {
                                 Text("\(followingCount)")
                                     .font(.title3)
                                     .fontWeight(.bold)
+                                    .foregroundColor(colors.primaryText)
                                 Text("Following")
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(colors.secondaryText)
                             }
                         }
 
@@ -76,25 +82,26 @@ struct UserProfileView: View {
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
-                                .background(isFollowing ? Color.gray : Color(red: 0.0, green: 0.5, blue: 0.0))
+                                .background(isFollowing ? Color.gray : colors.accentDark)
                                 .cornerRadius(12)
                             }
                         }
                     }
                     .padding()
                     .frame(maxWidth: .infinity)
-                    .background(Color.white.opacity(0.5))
+                    .background(colors.cardBackground)
                     .cornerRadius(16)
 
                     // User's Activities
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Activities")
                             .font(.headline)
+                            .foregroundColor(colors.primaryText)
 
                         if activities.isEmpty {
                             Text("No activities yet")
                                 .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(colors.secondaryText)
                                 .frame(maxWidth: .infinity, alignment: .center)
                                 .padding()
                         } else {
@@ -105,33 +112,33 @@ struct UserProfileView: View {
                                             .font(.title2)
                                             .foregroundColor(.white)
                                             .frame(width: 50, height: 50)
-                                            .background(Color(red: 0.2, green: 0.3, blue: 0.2))
+                                            .background(colors.eventCardBackground)
                                             .cornerRadius(10)
 
                                         VStack(alignment: .leading, spacing: 4) {
                                             Text(activity.activityType.rawValue)
                                                 .font(.headline)
-                                                .foregroundColor(.primary)
+                                                .foregroundColor(colors.primaryText)
 
                                             if let notes = activity.notes {
                                                 Text(notes)
                                                     .font(.caption)
-                                                    .foregroundColor(.secondary)
+                                                    .foregroundColor(colors.secondaryText)
                                                     .lineLimit(1)
                                             }
 
                                             Text(formatDate(activity.timestamp))
                                                 .font(.caption2)
-                                                .foregroundColor(.secondary)
+                                                .foregroundColor(colors.secondaryText)
                                         }
 
                                         Spacer()
 
                                         Image(systemName: "chevron.right")
-                                            .foregroundColor(.secondary)
+                                            .foregroundColor(colors.secondaryText)
                                     }
                                     .padding()
-                                    .background(Color.white.opacity(0.5))
+                                    .background(colors.cardBackground)
                                     .cornerRadius(12)
                                 }
                             }
@@ -139,7 +146,7 @@ struct UserProfileView: View {
                     }
                     .padding()
                     .frame(maxWidth: .infinity)
-                    .background(Color.white.opacity(0.3))
+                    .background(colors.secondaryCardBackground)
                     .cornerRadius(16)
                 }
                 .padding()

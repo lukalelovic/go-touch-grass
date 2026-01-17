@@ -9,11 +9,14 @@ import SwiftUI
 
 struct ShareTab: View {
     @StateObject private var viewModel = ShareViewModel()
+    @EnvironmentObject var themeManager: ThemeManager
 
     var body: some View {
+        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+
         NavigationStack {
             ZStack {
-                Color(red: 0.85, green: 0.93, blue: 0.85)
+                colors.primaryBackground
                     .ignoresSafeArea()
 
                 ScrollView {
@@ -22,7 +25,7 @@ struct ShareTab: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Activity Type")
                                 .font(.headline)
-                                .foregroundColor(.primary)
+                                .foregroundColor(colors.primaryText)
 
                             Picker("Activity Type", selection: $viewModel.selectedActivityType) {
                                 ForEach(ActivityType.allCases, id: \.self) { type in
@@ -35,7 +38,7 @@ struct ShareTab: View {
                             }
                             .pickerStyle(.menu)
                             .padding()
-                            .background(Color.white.opacity(0.8))
+                            .background(colors.cardBackground)
                             .cornerRadius(12)
                         }
 
@@ -43,38 +46,49 @@ struct ShareTab: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Notes")
                                 .font(.headline)
-                                .foregroundColor(.primary)
+                                .foregroundColor(colors.primaryText)
 
-                            TextEditor(text: $viewModel.notes)
-                                .frame(height: 120)
-                                .padding(8)
-                                .background(Color.white.opacity(0.8))
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                )
+                            ZStack(alignment: .topLeading) {
+                                if viewModel.notes.isEmpty {
+                                    Text("Share your experience...")
+                                        .foregroundColor(colors.secondaryText.opacity(0.5))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 16)
+                                }
+
+                                TextEditor(text: $viewModel.notes)
+                                    .frame(height: 120)
+                                    .padding(4)
+                                    .scrollContentBackground(.hidden)
+                                    .background(themeManager.isDarkMode ? Color(red: 0.2, green: 0.3, blue: 0.2) : Color.white.opacity(0.8))
+                                    .foregroundColor(colors.primaryText)
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
+                            }
                         }
 
                         // Location Picker
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Location (Optional)")
                                 .font(.headline)
-                                .foregroundColor(.primary)
+                                .foregroundColor(colors.primaryText)
 
                             Button(action: {
                                 viewModel.showLocationPicker = true
                             }) {
                                 HStack {
                                     Image(systemName: "mappin.circle.fill")
-                                        .foregroundColor(viewModel.selectedLocation != nil ? Color(red: 0.1, green: 0.6, blue: 0.1) : .gray)
+                                        .foregroundColor(viewModel.selectedLocation != nil ? colors.accent : .gray)
 
                                     if let location = viewModel.selectedLocation {
                                         Text(location.name ?? "Unknown Location")
-                                            .foregroundColor(.primary)
+                                            .foregroundColor(colors.primaryText)
                                     } else {
                                         Text("Search for a location")
-                                            .foregroundColor(.secondary)
+                                            .foregroundColor(colors.secondaryText)
                                     }
 
                                     Spacer()
@@ -92,7 +106,7 @@ struct ShareTab: View {
                                     }
                                 }
                                 .padding()
-                                .background(Color.white.opacity(0.8))
+                                .background(colors.cardBackground)
                                 .cornerRadius(12)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
@@ -120,7 +134,7 @@ struct ShareTab: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color(red: 0.1, green: 0.6, blue: 0.1))
+                            .background(colors.accent)
                             .cornerRadius(12)
                         }
                         .padding(.top, 10)
@@ -128,7 +142,7 @@ struct ShareTab: View {
                         // Info Text
                         Text("Remember: You can only log 3 activities per day!")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(colors.secondaryText)
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity)
                     }
@@ -136,6 +150,9 @@ struct ShareTab: View {
                 }
             }
             .navigationTitle("Share")
+            .toolbarBackground(colors.primaryBackground, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(themeManager.isDarkMode ? .dark : .light, for: .navigationBar)
             .sheet(isPresented: $viewModel.showLocationPicker) {
                 LocationPickerView(selectedLocation: $viewModel.selectedLocation)
             }
