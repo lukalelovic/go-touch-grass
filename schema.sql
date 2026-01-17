@@ -17,11 +17,15 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Drop tables if they exist (for clean setup)
--- DROP TABLE IF EXISTS activity_likes CASCADE;
--- DROP TABLE IF EXISTS activities CASCADE;
--- DROP TABLE IF EXISTS activity_subtypes CASCADE;
--- DROP TABLE IF EXISTS activity_types CASCADE;
--- DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS user_badges CASCADE;
+DROP TABLE IF EXISTS level_milestones CASCADE;
+DROP TABLE IF EXISTS badges CASCADE;
+DROP TABLE IF EXISTS activity_likes CASCADE;
+DROP TABLE IF EXISTS activities CASCADE;
+DROP TABLE IF EXISTS activity_subtypes CASCADE;
+DROP TABLE IF EXISTS activity_types CASCADE;
+DROP TABLE IF EXISTS user_follows CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 
 -- ============================================================================
 -- USERS TABLE
@@ -178,7 +182,10 @@ CREATE INDEX idx_activity_likes_user_id ON activity_likes(user_id);
 -- VIEWS FOR CONVENIENT QUERYING
 -- ============================================================================
 
--- Drop existing view first to avoid column order conflicts
+-- Drop existing views first to avoid conflicts
+DROP VIEW IF EXISTS user_badge_progress CASCADE;
+DROP VIEW IF EXISTS user_current_levels CASCADE;
+DROP VIEW IF EXISTS user_stats CASCADE;
 DROP VIEW IF EXISTS activities_with_stats CASCADE;
 
 -- View to get activity feed with like counts and user profile info
@@ -219,6 +226,12 @@ GROUP BY
 -- ============================================================================
 -- USER FOLLOW FUNCTIONS
 -- ============================================================================
+
+-- Drop existing functions first
+DROP FUNCTION IF EXISTS toggle_user_follow(UUID, UUID);
+DROP FUNCTION IF EXISTS is_following(UUID, UUID);
+DROP FUNCTION IF EXISTS get_follower_count(UUID);
+DROP FUNCTION IF EXISTS get_following_count(UUID);
 
 -- Function to toggle follow (follow if not following, unfollow if following)
 CREATE OR REPLACE FUNCTION toggle_user_follow(
@@ -296,6 +309,11 @@ $$ LANGUAGE plpgsql;
 -- FUNCTIONS
 -- ============================================================================
 
+-- Drop existing functions and triggers
+DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
+DROP FUNCTION IF EXISTS toggle_activity_like(UUID, UUID);
+DROP FUNCTION IF EXISTS has_user_liked_activity(UUID, UUID);
+
 -- Function to update the updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -363,6 +381,10 @@ $$ LANGUAGE plpgsql;
 -- ============================================================================
 -- BADGES AND LEVELS SYSTEM
 -- ============================================================================
+
+DROP TABLE IF EXISTS user_badges;
+DROP TABLE IF EXISTS badges;
+DROP TYPE IF EXISTS badge_category;
 
 -- Badge categories for organizing different types of achievements
 CREATE TYPE badge_category AS ENUM (
@@ -978,3 +1000,21 @@ INSERT INTO user_follows (follower_id, following_id) VALUES
 -- ) = 50  -- Replace 50 with desired milestone level
 -- ORDER BY a.timestamp DESC
 -- LIMIT 10;
+
+-- ============================================================================
+-- Security Policies
+-- ============================================================================
+create policy "Public can search usernames"
+on users
+for select
+using (username is not null);
+
+-- TODO: below policy currently doesnt work (auth is not setup yet)
+create policy "Users can follow others"
+on user_follows
+for insert
+with check (
+  follower_id = auth.uid()
+);
+
+-- TODO: remaining policies

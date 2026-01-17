@@ -10,7 +10,16 @@ import Combine
 
 @MainActor
 class ProfileViewModel: ObservableObject {
-    @Published var currentUser: User = User.sampleUsers[0]
+    // TODO: Replace with actual current user from Supabase Auth when auth is implemented
+    // Using real user from database for now
+    @Published var currentUser: User = User(
+        id: UUID(uuidString: "28eb3c73-4815-4d69-a0ba-0c0ae84d1764")!,
+        username: "outdoor_enthusiast",
+        email: nil,
+        profilePictureUrl: nil,
+        createdAt: nil,
+        updatedAt: nil
+    )
     @Published var userActivities: [Activity] = []
     @Published var currentStreak: Int = 0
     @Published var totalActivities: Int = 0
@@ -26,11 +35,16 @@ class ProfileViewModel: ObservableObject {
     @Published var unlockedBadges: [BadgeProgress] = []
     @Published var lockedBadges: [BadgeProgress] = []
 
+    @Published var isLoading = false
+    @Published var errorMessage: String?
+
     private let activityStore: ActivityStore
+    private let supabaseManager: SupabaseManager
     private var cancellables = Set<AnyCancellable>()
 
-    init(activityStore: ActivityStore = .shared) {
+    init(activityStore: ActivityStore = .shared, supabaseManager: SupabaseManager = .shared) {
         self.activityStore = activityStore
+        self.supabaseManager = supabaseManager
         setupBindings()
     }
 
@@ -52,89 +66,93 @@ class ProfileViewModel: ObservableObject {
     // MARK: - Public Methods
 
     func loadUserProfile() {
-        // TODO: Fetch current user from Supabase Auth
-        // - Get authenticated user session
-        // - Load user profile data
-        // currentUser = await supabaseClient.auth.session?.user
-
-        // Load activities from store (already updated through binding)
-        userActivities = activityStore.getActivitiesForUser(currentUser)
-
-        // Calculate streak
-        calculateStreak()
-
-        // Load stats from database
-        loadUserStats()
-
-        // Load level info
-        loadLevelInfo()
-
-        // Load badges
-        loadBadges()
-
-        // Load follower/following counts
-        loadFollowCounts()
+        Task {
+            await fetchUserProfile()
+        }
     }
 
-    func loadFollowCounts() {
-        // TODO: Query follower and following counts from Supabase
-        // - SELECT get_follower_count(currentUser.id)
-        // - SELECT get_following_count(currentUser.id)
-        // Or use the user_stats view which includes these counts
-        //
-        // For now, using placeholder data
+    private func fetchUserProfile() async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            // TODO: Fetch current user from Supabase Auth when auth is implemented
+            // For now, using sample user
+
+            // Fetch user activities from Supabase
+            let activities = try await supabaseManager.fetchUserActivities(
+                userId: currentUser.id,
+                limit: 50
+            )
+            userActivities = activities
+            activityStore.activities = activities
+
+            // Fetch streak
+            let streak = try await supabaseManager.getUserStreak(userId: currentUser.id)
+            currentStreak = streak
+
+            // Fetch follower/following counts
+            let followerCount = try await supabaseManager.getFollowerCount(userId: currentUser.id)
+            let followingCount = try await supabaseManager.getFollowingCount(userId: currentUser.id)
+            self.followerCount = followerCount
+            self.followingCount = followingCount
+
+            // Fetch level info
+            let levelInfo = try await supabaseManager.getUserLevelInfo(userId: currentUser.id)
+            self.levelInfo = levelInfo
+
+            // Fetch badge progress
+            let badgeProgress = try await supabaseManager.getUserBadgeProgress(userId: currentUser.id)
+            self.badgeProgress = badgeProgress
+            self.unlockedBadges = badgeProgress.filter { $0.isUnlocked }
+            self.lockedBadges = badgeProgress.filter { !$0.isUnlocked }
+
+            // Fetch user stats
+            let stats = try await supabaseManager.getUserStats(userId: currentUser.id)
+            self.userStats = stats
+
+            isLoading = false
+        } catch {
+            errorMessage = "Failed to load profile: \(error.localizedDescription)"
+            isLoading = false
+            print("Error loading profile: \(error)")
+
+            // Fall back to local calculations
+            loadLocalProfileData()
+        }
+    }
+
+    private func loadLocalProfileData() {
+        // Fall back to local data when Supabase fails
+        userActivities = activityStore.getActivitiesForUser(currentUser)
+        calculateLocalStreak()
+        loadLocalLevelInfo()
+        loadLocalBadges()
         followerCount = 0
         followingCount = 0
     }
 
-    func calculateStreak() {
-        // TODO: Calculate actual streak
-        // - Query activities grouped by date
-        // - Count consecutive days with activities
-        // - Update currentStreak
-        //
-        // let sortedActivities = userActivities.sorted { $0.timestamp > $1.timestamp }
-        // var streak = 0
-        // var currentDate = Date()
-        // for activity in sortedActivities {
-        //     if Calendar.current.isDate(activity.timestamp, inSameDayAs: currentDate) {
-        //         if streak == 0 { streak = 1 }
-        //     } else if let previousDay = Calendar.current.date(byAdding: .day, value: -1, to: currentDate),
-        //               Calendar.current.isDate(activity.timestamp, inSameDayAs: previousDay) {
-        //         streak += 1
-        //         currentDate = previousDay
-        //     } else {
-        //         break
-        //     }
-        // }
-        // currentStreak = streak
+    func loadFollowCounts() {
+        Task {
+            do {
+                let followerCount = try await supabaseManager.getFollowerCount(userId: currentUser.id)
+                let followingCount = try await supabaseManager.getFollowingCount(userId: currentUser.id)
+                self.followerCount = followerCount
+                self.followingCount = followingCount
+            } catch {
+                print("Error loading follow counts: \(error)")
+                followerCount = 0
+                followingCount = 0
+            }
+        }
+    }
 
-        // Placeholder value
+    private func calculateLocalStreak() {
+        // Local streak calculation as fallback
         currentStreak = 3
     }
 
-    func loadUserStats() {
-        // TODO: Query user_stats view from Supabase
-        // - SELECT * FROM user_stats WHERE user_id = currentUser.id
-        // - Parse JSONB activities_by_type field
-        // - Update userStats property
-        //
-        // For now, use sample data
-        // userStats = UserStats.sampleStats
-    }
-
-    func loadLevelInfo() {
-        // TODO: Query user_current_levels view from Supabase
-        // - SELECT * FROM user_current_levels WHERE user_id = currentUser.id
-        // - This view calculates current level, milestone info, and progress
-        // - Update levelInfo property
-        //
-        // Example query result includes:
-        // - current_level (equals total activities)
-        // - current_milestone_level, milestone_name, milestone_icon
-        // - next_milestone_level, next_milestone_name
-        // - activities_to_next_milestone, progress_to_next_milestone
-        //
+    private func loadLocalLevelInfo() {
         // For now, calculate locally from activities
         let totalActivities = userActivities.count
         let currentMilestone = LevelMilestone.milestoneFor(level: totalActivities)
@@ -169,20 +187,7 @@ class ProfileViewModel: ObservableObject {
         )
     }
 
-    func loadBadges() {
-        // TODO: Query user_badge_progress view from Supabase
-        // - SELECT * FROM user_badge_progress WHERE user_id = currentUser.id
-        // - This view returns all badges with is_unlocked flag
-        // - Update badgeProgress, unlockedBadges, and lockedBadges
-        //
-        // Example query:
-        // let response = await supabase
-        //     .from("user_badge_progress")
-        //     .select("*")
-        //     .eq("user_id", currentUser.id)
-        //     .order("is_unlocked", ascending: false)
-        //     .order("display_order", ascending: true)
-        //
+    private func loadLocalBadges() {
         // For now, use sample data
         let allBadges = Badge.sampleBadges.map { badge in
             // Simple logic: unlock if criteria is met

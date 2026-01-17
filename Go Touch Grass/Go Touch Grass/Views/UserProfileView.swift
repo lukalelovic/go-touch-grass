@@ -14,7 +14,19 @@ struct UserProfileView: View {
     @State private var followerCount: Int = 0
     @State private var followingCount: Int = 0
     @State private var activities: [Activity] = []
+    @State private var isLoading: Bool = false
     @EnvironmentObject var themeManager: ThemeManager
+    @StateObject private var supabaseManager = SupabaseManager.shared
+    // TODO: Replace with actual current user from Supabase Auth when auth is implemented
+    // Using real user from database for now
+    private let currentUser = User(
+        id: UUID(uuidString: "28eb3c73-4815-4d69-a0ba-0c0ae84d1764")!,
+        username: "outdoor_enthusiast",
+        email: nil,
+        profilePictureUrl: nil,
+        createdAt: nil,
+        updatedAt: nil
+    )
 
     var body: some View {
         let colors = AppColors(isDarkMode: themeManager.isDarkMode)
@@ -70,9 +82,7 @@ struct UserProfileView: View {
                         // Follow/Unfollow button (only show if not current user)
                         if !isCurrentUser {
                             Button(action: {
-                                // TODO: Toggle follow status via SupabaseManager
-                                isFollowing.toggle()
-                                followerCount += isFollowing ? 1 : -1
+                                toggleFollow()
                             }) {
                                 HStack {
                                     Image(systemName: isFollowing ? "person.fill.checkmark" : "person.badge.plus")
@@ -85,6 +95,7 @@ struct UserProfileView: View {
                                 .background(isFollowing ? Color.gray : colors.accentDark)
                                 .cornerRadius(12)
                             }
+                            .disabled(isLoading)
                         }
                     }
                     .padding()
@@ -160,11 +171,63 @@ struct UserProfileView: View {
     }
 
     private func loadUserData() {
-        // TODO: Load user's follower/following counts and activities from Supabase
-        // For now, using placeholder data
-        followerCount = 0
-        followingCount = 0
-        activities = []
+        Task {
+            isLoading = true
+
+            do {
+                // Load follower/following counts
+                let followerCount = try await supabaseManager.getFollowerCount(userId: user.id)
+                let followingCount = try await supabaseManager.getFollowingCount(userId: user.id)
+                self.followerCount = followerCount
+                self.followingCount = followingCount
+
+                // Load user activities
+                let activities = try await supabaseManager.fetchUserActivities(userId: user.id, limit: 50)
+                self.activities = activities
+
+                // Check if current user is following this user
+                if !isCurrentUser {
+                    let isFollowing = try await supabaseManager.isFollowing(
+                        followerId: currentUser.id,
+                        followingId: user.id
+                    )
+                    self.isFollowing = isFollowing
+                }
+
+                isLoading = false
+            } catch {
+                print("Error loading user data: \(error)")
+                isLoading = false
+
+                // Fall back to placeholder data
+                followerCount = 0
+                followingCount = 0
+                activities = []
+            }
+        }
+    }
+
+    private func toggleFollow() {
+        Task {
+            do {
+                isLoading = true
+
+                // Toggle follow status
+                let nowFollowing = try await supabaseManager.toggleFollow(
+                    followerId: currentUser.id,
+                    followingId: user.id
+                )
+
+                // Update state
+                isFollowing = nowFollowing
+                followerCount += nowFollowing ? 1 : -1
+
+                isLoading = false
+            } catch {
+                print("Error toggling follow: \(error)")
+                isLoading = false
+            }
+        }
     }
 
     private func formatDate(_ date: Date) -> String {

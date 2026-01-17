@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - Activity Type
-enum ActivityType: String, CaseIterable {
+enum ActivityType: String, CaseIterable, Codable {
     case hiking = "Hiking"
     case running = "Running"
     case cycling = "Cycling"

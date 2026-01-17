@@ -16,59 +16,77 @@ class ShareViewModel: ObservableObject {
     @Published var showLocationPicker = false
     @Published var showSuccessAlert = false
     @Published var errorMessage: String?
+    @Published var isSaving = false
 
     private let activityStore: ActivityStore
-    // TODO: Replace with actual current user from Supabase Auth
-    private let currentUser = User.sampleUsers[0]
+    private let supabaseManager: SupabaseManager
+    // TODO: Replace with actual current user from Supabase Auth when auth is implemented
+    // Using real user from database for now
+    private let currentUser = User(
+        id: UUID(uuidString: "28eb3c73-4815-4d69-a0ba-0c0ae84d1764")!,
+        username: "outdoor_enthusiast",
+        email: nil,
+        profilePictureUrl: nil,
+        createdAt: nil,
+        updatedAt: nil
+    )
 
-    init(activityStore: ActivityStore = .shared) {
+    init(activityStore: ActivityStore = .shared, supabaseManager: SupabaseManager = .shared) {
         self.activityStore = activityStore
+        self.supabaseManager = supabaseManager
     }
 
     // MARK: - Public Methods
 
     func saveActivity() {
-        // Validate: Check daily limit (3 activities per day)
-        let todayCount = activityStore.getTodayActivityCount(for: currentUser)
-        if todayCount >= 3 {
-            errorMessage = "Daily limit reached! You can only log 3 activities per day."
-            return
+        Task {
+            await saveActivityAsync()
         }
+    }
 
+    private func saveActivityAsync() async {
         // Validate: Notes should not be empty
         if notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             errorMessage = "Please add some notes about your activity!"
             return
         }
 
-        // Create Activity object
-        let newActivity = Activity(
-            user: currentUser,
-            activityType: selectedActivityType,
-            timestamp: Date(),
-            notes: notes.isEmpty ? nil : notes,
-            location: selectedLocation
-        )
+        isSaving = true
+        errorMessage = nil
 
-        // Save to in-memory store
-        activityStore.addActivity(newActivity)
+        do {
+            // Check daily limit (3 activities per day)
+            let todayCount = try await supabaseManager.getTodayActivityCount(userId: currentUser.id)
+            if todayCount >= 3 {
+                errorMessage = "Daily limit reached! You can only log 3 activities per day."
+                isSaving = false
+                return
+            }
 
-        // TODO: Later, call Supabase to persist activity
-        // - POST to Supabase activities table
-        // - Handle success/error responses
-        // do {
-        //     try await supabaseClient.from("activities").insert(newActivity)
-        //     showSuccessAlert = true
-        // } catch {
-        //     errorMessage = "Failed to save activity: \(error.localizedDescription)"
-        // }
+            // Create activity in Supabase
+            let newActivity = try await supabaseManager.createActivity(
+                userId: currentUser.id,
+                activityType: selectedActivityType,
+                notes: notes.isEmpty ? nil : notes,
+                location: selectedLocation,
+                timestamp: Date()
+            )
 
-        // TODO: Upload photo to Supabase Storage if provided
-        // - Upload image to storage bucket
-        // - Get URL and update activity record
+            // Also save to in-memory store for local UI updates
+            activityStore.addActivity(newActivity)
 
-        // Show success message
-        showSuccessAlert = true
+            // TODO: Upload photo to Supabase Storage if provided
+            // - Upload image to storage bucket
+            // - Get URL and update activity record
+
+            // Show success message
+            isSaving = false
+            showSuccessAlert = true
+        } catch {
+            errorMessage = "Failed to save activity: \(error.localizedDescription)"
+            isSaving = false
+            print("Error saving activity: \(error)")
+        }
     }
 
     func clearForm() {
@@ -78,7 +96,6 @@ class ShareViewModel: ObservableObject {
     }
 
     func canSaveActivity() -> Bool {
-        let todayCount = activityStore.getTodayActivityCount(for: currentUser)
-        return todayCount < 3 && !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return !isSaving && !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }

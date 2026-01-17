@@ -14,3 +14,6 @@ xcuserdata
 *.mode2v3
 
 .env
+
+# Supabase credentials (use SupabaseConfig.swift.template as reference)
+Go Touch Grass/Go Touch Grass/Config/SupabaseConfig.swift

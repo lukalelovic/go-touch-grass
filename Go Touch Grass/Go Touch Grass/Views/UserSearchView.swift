@@ -12,7 +12,10 @@ struct UserSearchView: View {
     @State private var searchText: String = ""
     @State private var searchResults: [User] = []
     @State private var isSearching: Bool = false
+    @State private var errorMessage: String?
+    @State private var showDebugAlert = false
     @EnvironmentObject var themeManager: ThemeManager
+    @StateObject private var supabaseManager = SupabaseManager.shared
 
     var body: some View {
         let colors = AppColors(isDarkMode: themeManager.isDarkMode)
@@ -94,19 +97,25 @@ struct UserSearchView: View {
     }
 
     private func performSearch(query: String) {
-        guard !query.isEmpty else {
-            searchResults = []
-            return
+        Task {
+            isSearching = true
+            errorMessage = nil
+            do {
+                let results = try await supabaseManager.searchUsers(query: query.lowercased(), limit: 20)
+                searchResults = results
+                isSearching = false
+                print("✅ Search successful: Found \(results.count) users for query '\(query.lowercased())'")
+                if !results.isEmpty {
+                    print("   Results: \(results.map { $0.username }.joined(separator: ", "))")
+                }
+            } catch {
+                errorMessage = "Search failed: \(error.localizedDescription)"
+                isSearching = false
+                print("❌ Error searching users for query '\(query)': \(error)")
+
+                // Don't fall back to sample data - show empty results so it's clear search failed
+                searchResults = []
+            }
         }
-
-        isSearching = true
-
-        // TODO: Query Supabase for users matching the search query
-        // For now, using sample data filtered by username
-        searchResults = User.sampleUsers.filter { user in
-            user.username.localizedCaseInsensitiveContains(query)
-        }
-
-        isSearching = false
     }
 }

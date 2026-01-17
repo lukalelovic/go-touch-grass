@@ -9,7 +9,7 @@ import Foundation
 import Combine
 
 class ActivityStore: ObservableObject {
-    @Published var activities: [Activity] = Activity.sampleActivities
+    @Published var activities: [Activity] = []  // Start empty, will be populated from Supabase
 
     static let shared = ActivityStore()
 

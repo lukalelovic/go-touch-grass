@@ -1,0 +1,19 @@
+//
+//  SupabaseConfig.swift.template
+//  Go Touch Grass
+//
+//  SETUP INSTRUCTIONS:
+//  1. Copy this file and rename it to "SupabaseConfig.swift" (without .template)
+//  2. Replace the placeholder values below with your actual Supabase credentials
+//  3. NEVER commit the actual SupabaseConfig.swift file to git
+//     (it should already be in .gitignore)
+//
+//  Get your credentials from: https://supabase.com/dashboard/project/_/settings/api
+//
+
+import Foundation
+
+enum SupabaseConfig {
+    static let url = "https://your-project-id.supabase.co"
+    static let anonKey = "your-anon-key-here"
+}

@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - Location
-struct Location: Equatable {
+struct Location: Equatable, Codable {
     let latitude: Double
     let longitude: Double
     let name: String?

@@ -6,6 +6,27 @@ Limited to *one* activity post per day to prevent spam, and encourage getting of
 
 Follow your friends to see what they are up to outside, and track your own activities. Earn badges for each new type of activity you do, and earn levels in each type that you're persistent in.
 
+## Setup Instructions
+
+### Prerequisites
+- Xcode (latest version)
+- A Supabase account and project
+
+### Supabase Configuration
+1. Create a Supabase project at [https://supabase.com](https://supabase.com)
+2. Navigate to your project settings: `Settings > API`
+3. Copy your **Project URL** and **anon/public key**
+4. In the project directory, navigate to `Go Touch Grass/Go Touch Grass/Config/`
+5. Copy `SupabaseConfig.swift.template` to `SupabaseConfig.swift`
+6. Open `SupabaseConfig.swift` and replace the placeholder values:
+   ```swift
+   enum SupabaseConfig {
+       static let url = "https://your-project-id.supabase.co"  // Your Project URL
+       static let anonKey = "your-anon-key-here"               // Your anon/public key
+   }
+   ```
+7. **IMPORTANT**: Never commit `SupabaseConfig.swift` to version control (it's already gitignored)
+
 ## Tech Stack
 | Layer         | Choice                              |
 | ------------- | ----------------------------------- |
