@@ -1,5 +1,8 @@
 # Go Touch Grass
 
+![Feed Tab](media/image.png)
+![Profile Tab](media/image-1.png)
+
 A new iOS social media and personal tracking app for all activities done outside.
 
 Limited to *one* activity post per day to prevent spam, and encourage getting off the app and actually doing some activities (this also helps rate limit users and with pricing). Users on an eventual 'Pro' tier can post unlimited 'Touch Grass' activities per day.

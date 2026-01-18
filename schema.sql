@@ -101,6 +101,9 @@ INSERT INTO activity_types (name, icon) VALUES
     ('Walking', 'figure.walk'),
     ('Other', 'figure.outdoor.cycle');
 
+INSERT INTO activity_types (name, icon) VALUES
+    ('Coffee', 'cup.and.saucer.fill');
+
 -- ============================================================================
 -- ACTIVITY SUBTYPES TABLE (Optional granular categorization)
 -- ============================================================================

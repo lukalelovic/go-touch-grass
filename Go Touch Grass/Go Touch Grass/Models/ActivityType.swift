@@ -19,6 +19,7 @@ enum ActivityType: String, CaseIterable, Codable {
     case skiing = "Skiing"
     case surfing = "Surfing"
     case walking = "Walking"
+    case coffee = "Coffee"
     case other = "Other"
 
     var icon: String {
@@ -33,6 +34,7 @@ enum ActivityType: String, CaseIterable, Codable {
         case .skiing: return "figure.skiing.downhill"
         case .surfing: return "surfboard"
         case .walking: return "figure.walk"
+        case .coffee: return "cup.and.saucer.fill"
         case .other: return "leaf.fill"
         }
     }
