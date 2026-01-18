@@ -10,6 +10,7 @@ import SwiftUI
 struct FeedTab: View {
     @StateObject private var viewModel = FeedViewModel()
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var supabaseManager: SupabaseManager
 
     var body: some View {
         let colors = AppColors(isDarkMode: themeManager.isDarkMode)
@@ -56,6 +57,7 @@ struct FeedTab: View {
                 }
             }
             .onAppear {
+                viewModel.updateSupabaseManager(supabaseManager)
                 viewModel.loadActivities()
             }
         }

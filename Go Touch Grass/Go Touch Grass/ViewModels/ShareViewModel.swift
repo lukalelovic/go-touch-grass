@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import Auth
 
 @MainActor
 class ShareViewModel: ObservableObject {
@@ -19,21 +20,15 @@ class ShareViewModel: ObservableObject {
     @Published var isSaving = false
 
     private let activityStore: ActivityStore
-    private let supabaseManager: SupabaseManager
-    // TODO: Replace with actual current user from Supabase Auth when auth is implemented
-    // Using real user from database for now
-    private let currentUser = User(
-        id: UUID(uuidString: "28eb3c73-4815-4d69-a0ba-0c0ae84d1764")!,
-        username: "outdoor_enthusiast",
-        email: nil,
-        profilePictureUrl: nil,
-        createdAt: nil,
-        updatedAt: nil
-    )
+    private var supabaseManager: SupabaseManager
 
-    init(activityStore: ActivityStore = .shared, supabaseManager: SupabaseManager = SupabaseManager()) {
+    init(activityStore: ActivityStore = .shared, supabaseManager: SupabaseManager? = nil) {
         self.activityStore = activityStore
-        self.supabaseManager = supabaseManager
+        self.supabaseManager = supabaseManager ?? SupabaseManager()
+    }
+
+    func updateSupabaseManager(_ manager: SupabaseManager) {
+        self.supabaseManager = manager
     }
 
     // MARK: - Public Methods
@@ -51,12 +46,20 @@ class ShareViewModel: ObservableObject {
             return
         }
 
+        // Get the authenticated user
+        guard let authUser = supabaseManager.currentUser else {
+            errorMessage = "Not authenticated"
+            return
+        }
+
         isSaving = true
         errorMessage = nil
 
         do {
+            let userId = authUser.id
+
             // Check daily limit (3 activities per day)
-            let todayCount = try await supabaseManager.getTodayActivityCount(userId: currentUser.id)
+            let todayCount = try await supabaseManager.getTodayActivityCount(userId: userId)
             if todayCount >= 3 {
                 errorMessage = "Daily limit reached! You can only log 3 activities per day."
                 isSaving = false
@@ -65,7 +68,7 @@ class ShareViewModel: ObservableObject {
 
             // Create activity in Supabase
             let newActivity = try await supabaseManager.createActivity(
-                userId: currentUser.id,
+                userId: userId,
                 activityType: selectedActivityType,
                 notes: notes.isEmpty ? nil : notes,
                 location: selectedLocation,

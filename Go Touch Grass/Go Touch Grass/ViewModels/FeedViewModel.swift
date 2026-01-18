@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import Auth
 
 @MainActor
 class FeedViewModel: ObservableObject {
@@ -15,23 +16,17 @@ class FeedViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let activityStore: ActivityStore
-    private let supabaseManager: SupabaseManager
+    private var supabaseManager: SupabaseManager
     private var cancellables = Set<AnyCancellable>()
-    // TODO: Replace with actual current user from Supabase Auth when auth is implemented
-    // Using real user from database for now
-    private let currentUser = User(
-        id: UUID(uuidString: "28eb3c73-4815-4d69-a0ba-0c0ae84d1764")!,
-        username: "outdoor_enthusiast",
-        email: nil,
-        profilePictureUrl: nil,
-        createdAt: nil,
-        updatedAt: nil
-    )
 
-    init(activityStore: ActivityStore = .shared, supabaseManager: SupabaseManager = SupabaseManager()) {
+    init(activityStore: ActivityStore = .shared, supabaseManager: SupabaseManager? = nil) {
         self.activityStore = activityStore
-        self.supabaseManager = supabaseManager
+        self.supabaseManager = supabaseManager ?? SupabaseManager()
         setupBindings()
+    }
+
+    func updateSupabaseManager(_ manager: SupabaseManager) {
+        self.supabaseManager = manager
     }
 
     private func setupBindings() {
@@ -56,11 +51,19 @@ class FeedViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
+        // Get the authenticated user
+        guard let authUser = supabaseManager.currentUser else {
+            errorMessage = "Not authenticated"
+            isLoading = false
+            return
+        }
+
         do {
-            // Fetch activities from Supabase (feed shows user's own activities for now)
-            // TODO: Update to fetch from followed users once auth is implemented
+            let userId = authUser.id
+
+            // Fetch activities from Supabase (feed shows user's own activities and followed users)
             let fetchedActivities = try await supabaseManager.fetchFeedActivities(
-                for: currentUser.id,
+                for: userId,
                 limit: 50
             )
 
@@ -75,8 +78,6 @@ class FeedViewModel: ObservableObject {
             errorMessage = "Failed to load activities: \(error.localizedDescription)"
             isLoading = false
             print("❌ Error loading activities from Supabase: \(error)")
-            print("ℹ️ Current user ID being used: \(currentUser.id)")
-            print("⚠️ Falling back to sample data. To fix: use a real user ID from your database")
 
             // Fall back to local/sample data
             activities = activityStore.activities

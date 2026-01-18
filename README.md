@@ -110,11 +110,11 @@ Goal: App is fully navigable with fake data
 - [x] 'Follow' button
 
 ### Enhanced Profiles
-- [ ] Public/private access
 - [x] Badges
 - [x] Badge levels
-- [ ] Settings page (change username, pfp, delete account, export activities)
 - [x] Dark mode
+- [ ] Settings page (change username, upload/change PFP, delete account, export activities)
+- [ ] Public/private access
 - [ ] Require 'Friendship' requests to follow
 
 #### Touch Grass Screen
@@ -139,9 +139,8 @@ Goal: Replace fake data with real persistence
 - [x] Create Supabase project
 - [x] Choose free tier to start
 - [ ] Set hard spending limit
-- [ ] Enable email or anonymous auth
 - [x] Add Supabase Swift SDK
-- [ ] Connect views/models to supabase via PostgREST
+- [x] Connect views/models to supabase via PostgREST
 
 #### Auth
 - [x] Sign up/sign in

@@ -10,6 +10,7 @@ import SwiftUI
 struct ShareTab: View {
     @StateObject private var viewModel = ShareViewModel()
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var supabaseManager: SupabaseManager
 
     var body: some View {
         let colors = AppColors(isDarkMode: themeManager.isDarkMode)
@@ -162,6 +163,9 @@ struct ShareTab: View {
                 }
             } message: {
                 Text("Your activity has been logged successfully!")
+            }
+            .onAppear {
+                viewModel.updateSupabaseManager(supabaseManager)
             }
         }
     }

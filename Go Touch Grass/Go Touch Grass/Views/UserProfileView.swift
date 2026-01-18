@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Auth
 
 struct UserProfileView: View {
     let user: User
@@ -16,17 +17,7 @@ struct UserProfileView: View {
     @State private var activities: [Activity] = []
     @State private var isLoading: Bool = false
     @EnvironmentObject var themeManager: ThemeManager
-    @StateObject private var supabaseManager = SupabaseManager()
-    // TODO: Replace with actual current user from Supabase Auth when auth is implemented
-    // Using real user from database for now
-    private let currentUser = User(
-        id: UUID(uuidString: "28eb3c73-4815-4d69-a0ba-0c0ae84d1764")!,
-        username: "outdoor_enthusiast",
-        email: nil,
-        profilePictureUrl: nil,
-        createdAt: nil,
-        updatedAt: nil
-    )
+    @EnvironmentObject var supabaseManager: SupabaseManager
 
     var body: some View {
         let colors = AppColors(isDarkMode: themeManager.isDarkMode)
@@ -186,9 +177,9 @@ struct UserProfileView: View {
                 self.activities = activities
 
                 // Check if current user is following this user
-                if !isCurrentUser {
+                if !isCurrentUser, let authUser = supabaseManager.currentUser {
                     let isFollowing = try await supabaseManager.isFollowing(
-                        followerId: currentUser.id,
+                        followerId: authUser.id,
                         followingId: user.id
                     )
                     self.isFollowing = isFollowing
@@ -209,12 +200,17 @@ struct UserProfileView: View {
 
     private func toggleFollow() {
         Task {
+            guard let authUser = supabaseManager.currentUser else {
+                print("Error: User not authenticated")
+                return
+            }
+
             do {
                 isLoading = true
 
                 // Toggle follow status
                 let nowFollowing = try await supabaseManager.toggleFollow(
-                    followerId: currentUser.id,
+                    followerId: authUser.id,
                     followingId: user.id
                 )
 

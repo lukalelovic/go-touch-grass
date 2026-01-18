@@ -94,8 +94,14 @@ class ProfileViewModel: ObservableObject {
             activityStore.activities = activities
 
             // Fetch streak
-            let streak = try await supabaseManager.getUserStreak(userId: userId)
-            currentStreak = streak
+            do {
+                let streak = try await supabaseManager.getUserStreak(userId: userId)
+                currentStreak = streak
+                print("✅ Fetched streak: \(streak)")
+            } catch {
+                print("❌ Error fetching streak: \(error)")
+                throw error
+            }
 
             // Fetch follower/following counts
             let followerCount = try await supabaseManager.getFollowerCount(userId: userId)
@@ -104,8 +110,14 @@ class ProfileViewModel: ObservableObject {
             self.followingCount = followingCount
 
             // Fetch level info
-            let levelInfo = try await supabaseManager.getUserLevelInfo(userId: userId)
-            self.levelInfo = levelInfo
+            do {
+                let levelInfo = try await supabaseManager.getUserLevelInfo(userId: userId)
+                self.levelInfo = levelInfo
+                print("✅ Fetched level info: Level \(levelInfo.currentLevel)")
+            } catch {
+                print("❌ Error fetching level info: \(error)")
+                throw error
+            }
 
             // Fetch badge progress
             let badgeProgress = try await supabaseManager.getUserBadgeProgress(userId: userId)
@@ -114,8 +126,14 @@ class ProfileViewModel: ObservableObject {
             self.lockedBadges = badgeProgress.filter { !$0.isUnlocked }
 
             // Fetch user stats
-            let stats = try await supabaseManager.getUserStats(userId: userId)
-            self.userStats = stats
+            do {
+                let stats = try await supabaseManager.getUserStats(userId: userId)
+                self.userStats = stats
+                print("✅ Fetched user stats: \(stats.totalActivities) activities")
+            } catch {
+                print("❌ Error fetching user stats: \(error)")
+                throw error
+            }
 
             isLoading = false
         } catch {

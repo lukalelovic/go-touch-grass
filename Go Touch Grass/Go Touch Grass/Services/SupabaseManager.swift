@@ -248,21 +248,55 @@ class SupabaseManager: ObservableObject {
             }
         }
 
-        // Insert activity
-        let insertData = try JSONSerialization.data(withJSONObject: activityData)
+        // Insert activity using Codable struct
+        struct ActivityInsert: Codable {
+            let userId: String
+            let activityTypeId: Int
+            let timestamp: String
+            let notes: String?
+            let locationLatitude: Double?
+            let locationLongitude: Double?
+            let locationName: String?
+
+            enum CodingKeys: String, CodingKey {
+                case userId = "user_id"
+                case activityTypeId = "activity_type_id"
+                case timestamp
+                case notes
+                case locationLatitude = "location_latitude"
+                case locationLongitude = "location_longitude"
+                case locationName = "location_name"
+            }
+        }
+
+        struct ActivityInsertResponse: Codable {
+            let id: String
+        }
+
+        let activityInsert = ActivityInsert(
+            userId: userId.uuidString,
+            activityTypeId: activityTypeId,
+            timestamp: ISO8601DateFormatter().string(from: timestamp),
+            notes: notes,
+            locationLatitude: location?.latitude,
+            locationLongitude: location?.longitude,
+            locationName: location?.name
+        )
+
         let insertResponse = try await client
             .from("activities")
-            .insert(insertData)
+            .insert(activityInsert)
             .select()
             .single()
             .execute()
 
-        // Fetch the full activity with stats
-        let activityId = try JSONDecoder().decode([String: String].self, from: insertResponse.data)["id"]
-        guard let id = activityId, let uuid = UUID(uuidString: id) else {
-            throw NSError(domain: "SupabaseManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to get activity ID"])
+        // Decode the response to get the activity ID
+        let insertedActivity = try JSONDecoder().decode(ActivityInsertResponse.self, from: insertResponse.data)
+        guard let uuid = UUID(uuidString: insertedActivity.id) else {
+            throw NSError(domain: "SupabaseManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to parse activity ID"])
         }
 
+        // Fetch the full activity with stats
         let activityResponse = try await client
             .from("activities_with_stats")
             .select()
@@ -459,7 +493,7 @@ class SupabaseManager: ObservableObject {
             .select()
             .eq("user_id", value: userId.uuidString)
             .order("is_unlocked", ascending: false)
-            .order("display_order")
+            .order("badge_id")
             .execute()
 
         let decoder = JSONDecoder()
