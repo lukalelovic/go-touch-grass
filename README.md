@@ -168,6 +168,10 @@ Goal: Replace fake data with real persistence
 - [ ] Cleaning
 - [ ] Coffee (possible subtypes)
 
+#### Touch Grass Connects to API
+- [ ] Find public APIs/databases (ideally free or low-cost) to connect to for local outdoor events
+- [ ] Setup service for connection and retrieval of events based on location input
+
 ### Phase 5 - App Rollout
 
 ### Free and Pro-Tiers
