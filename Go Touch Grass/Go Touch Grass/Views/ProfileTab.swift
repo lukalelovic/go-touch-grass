@@ -336,9 +336,7 @@ struct ProfileTab: View {
                                 .cornerRadius(12)
                             }
 
-                            Button(action: {
-                                // TODO: Navigate to settings
-                            }) {
+                            NavigationLink(destination: SettingsView()) {
                                 HStack {
                                     Image(systemName: "gearshape.fill")
                                     Text("Settings")

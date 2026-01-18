@@ -573,4 +573,67 @@ class SupabaseManager: ObservableObject {
             params: ["p_user_id": userId.uuidString]
         ).execute()
     }
+
+    // MARK: - Settings & Account Management
+
+    /// Update username
+    func updateUsername(userId: UUID, newUsername: String) async throws {
+        struct UsernameUpdate: Codable {
+            let username: String
+        }
+
+        let update = UsernameUpdate(username: newUsername)
+
+        _ = try await client
+            .from("users")
+            .update(update)
+            .eq("id", value: userId.uuidString)
+            .execute()
+    }
+
+    /// Update profile picture URL
+    func updateProfilePicture(userId: UUID, pictureUrl: String?) async throws {
+        struct ProfilePictureUpdate: Codable {
+            let profilePictureUrl: String?
+
+            enum CodingKeys: String, CodingKey {
+                case profilePictureUrl = "profile_picture_url"
+            }
+        }
+
+        let update = ProfilePictureUpdate(profilePictureUrl: pictureUrl)
+
+        _ = try await client
+            .from("users")
+            .update(update)
+            .eq("id", value: userId.uuidString)
+            .execute()
+    }
+
+    /// Delete profile picture from storage
+    func deleteProfilePicture(url: String) async throws {
+        // Extract the file path from the URL
+        // URL format: https://...supabase.co/storage/v1/object/public/avatars/user_id/filename.jpg
+        guard let urlComponents = URLComponents(string: url),
+              let pathComponents = urlComponents.path.components(separatedBy: "/avatars/").last else {
+            return
+        }
+
+        try await client.storage
+            .from("avatars")
+            .remove(paths: [pathComponents])
+    }
+
+    /// Delete user account and all related data
+    func deleteUserAccount(userId: UUID) async throws {
+        // Delete user (should cascade to all related tables via foreign keys)
+        _ = try await client
+            .from("users")
+            .delete()
+            .eq("id", value: userId.uuidString)
+            .execute()
+
+        // Sign out from auth
+        try await client.auth.signOut()
+    }
 }
