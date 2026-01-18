@@ -7,19 +7,11 @@
 
 import Foundation
 import Combine
+import Auth
 
 @MainActor
 class ProfileViewModel: ObservableObject {
-    // TODO: Replace with actual current user from Supabase Auth when auth is implemented
-    // Using real user from database for now
-    @Published var currentUser: User = User(
-        id: UUID(uuidString: "28eb3c73-4815-4d69-a0ba-0c0ae84d1764")!,
-        username: "outdoor_enthusiast",
-        email: nil,
-        profilePictureUrl: nil,
-        createdAt: nil,
-        updatedAt: nil
-    )
+    @Published var currentUser: User?
     @Published var userActivities: [Activity] = []
     @Published var currentStreak: Int = 0
     @Published var totalActivities: Int = 0
@@ -39,21 +31,25 @@ class ProfileViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let activityStore: ActivityStore
-    private let supabaseManager: SupabaseManager
+    private var supabaseManager: SupabaseManager
     private var cancellables = Set<AnyCancellable>()
 
-    init(activityStore: ActivityStore = .shared, supabaseManager: SupabaseManager = .shared) {
+    init(activityStore: ActivityStore = .shared, supabaseManager: SupabaseManager? = nil) {
         self.activityStore = activityStore
-        self.supabaseManager = supabaseManager
+        self.supabaseManager = supabaseManager ?? SupabaseManager()
         setupBindings()
+    }
+
+    func updateSupabaseManager(_ manager: SupabaseManager) {
+        self.supabaseManager = manager
     }
 
     private func setupBindings() {
         // Subscribe to ActivityStore changes to update user activities
         activityStore.$activities
             .map { [weak self] activities in
-                guard let self = self else { return [] }
-                return self.activityStore.getActivitiesForUser(self.currentUser)
+                guard let self = self, let currentUser = self.currentUser else { return [] }
+                return self.activityStore.getActivitiesForUser(currentUser)
             }
             .assign(to: &$userActivities)
 
@@ -76,39 +72,49 @@ class ProfileViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            // TODO: Fetch current user from Supabase Auth when auth is implemented
-            // For now, using sample user
+            // Get the authenticated user ID from Supabase Auth
+            guard let authUser = supabaseManager.currentUser else {
+                errorMessage = "Not authenticated"
+                isLoading = false
+                return
+            }
+
+            let userId = authUser.id
+
+            // Fetch the user profile from the users table
+            let user = try await supabaseManager.fetchUser(userId: userId)
+            currentUser = user
 
             // Fetch user activities from Supabase
             let activities = try await supabaseManager.fetchUserActivities(
-                userId: currentUser.id,
+                userId: userId,
                 limit: 50
             )
             userActivities = activities
             activityStore.activities = activities
 
             // Fetch streak
-            let streak = try await supabaseManager.getUserStreak(userId: currentUser.id)
+            let streak = try await supabaseManager.getUserStreak(userId: userId)
             currentStreak = streak
 
             // Fetch follower/following counts
-            let followerCount = try await supabaseManager.getFollowerCount(userId: currentUser.id)
-            let followingCount = try await supabaseManager.getFollowingCount(userId: currentUser.id)
+            let followerCount = try await supabaseManager.getFollowerCount(userId: userId)
+            let followingCount = try await supabaseManager.getFollowingCount(userId: userId)
             self.followerCount = followerCount
             self.followingCount = followingCount
 
             // Fetch level info
-            let levelInfo = try await supabaseManager.getUserLevelInfo(userId: currentUser.id)
+            let levelInfo = try await supabaseManager.getUserLevelInfo(userId: userId)
             self.levelInfo = levelInfo
 
             // Fetch badge progress
-            let badgeProgress = try await supabaseManager.getUserBadgeProgress(userId: currentUser.id)
+            let badgeProgress = try await supabaseManager.getUserBadgeProgress(userId: userId)
             self.badgeProgress = badgeProgress
             self.unlockedBadges = badgeProgress.filter { $0.isUnlocked }
             self.lockedBadges = badgeProgress.filter { !$0.isUnlocked }
 
             // Fetch user stats
-            let stats = try await supabaseManager.getUserStats(userId: currentUser.id)
+            let stats = try await supabaseManager.getUserStats(userId: userId)
             self.userStats = stats
 
             isLoading = false
@@ -124,6 +130,7 @@ class ProfileViewModel: ObservableObject {
 
     private func loadLocalProfileData() {
         // Fall back to local data when Supabase fails
+        guard let currentUser = currentUser else { return }
         userActivities = activityStore.getActivitiesForUser(currentUser)
         calculateLocalStreak()
         loadLocalLevelInfo()
@@ -134,6 +141,7 @@ class ProfileViewModel: ObservableObject {
 
     func loadFollowCounts() {
         Task {
+            guard let currentUser = currentUser else { return }
             do {
                 let followerCount = try await supabaseManager.getFollowerCount(userId: currentUser.id)
                 let followingCount = try await supabaseManager.getFollowingCount(userId: currentUser.id)
@@ -154,6 +162,8 @@ class ProfileViewModel: ObservableObject {
 
     private func loadLocalLevelInfo() {
         // For now, calculate locally from activities
+        guard let currentUser = currentUser else { return }
+
         let totalActivities = userActivities.count
         let currentMilestone = LevelMilestone.milestoneFor(level: totalActivities)
         let nextMilestone = LevelMilestone.nextMilestoneFor(level: totalActivities)

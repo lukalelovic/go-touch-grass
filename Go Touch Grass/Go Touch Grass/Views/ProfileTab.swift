@@ -10,6 +10,7 @@ import SwiftUI
 struct ProfileTab: View {
     @StateObject private var viewModel = ProfileViewModel()
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var supabaseManager: SupabaseManager
 
     var body: some View {
         let colors = AppColors(isDarkMode: themeManager.isDarkMode)
@@ -22,51 +23,47 @@ struct ProfileTab: View {
                 ScrollView {
                     VStack(spacing: 20) {
                         // User Info Card
-                        VStack(spacing: 12) {
-                            // Profile Picture
-                            ProfilePictureView(
-                                profilePictureUrl: viewModel.currentUser.profilePictureUrl,
-                                size: 100
-                            )
+                        if let currentUser = viewModel.currentUser {
+                            VStack(spacing: 12) {
+                                // Profile Picture
+                                ProfilePictureView(
+                                    profilePictureUrl: currentUser.profilePictureUrl,
+                                    size: 100
+                                )
 
-                            Text(viewModel.currentUser.username)
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .foregroundColor(colors.primaryText)
+                                Text(currentUser.username)
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(colors.primaryText)
 
-                            if let email = viewModel.currentUser.email {
-                                Text(email)
-                                    .font(.subheadline)
-                                    .foregroundColor(colors.secondaryText)
-                            }
+                                // Follower/Following counts
+                                HStack(spacing: 24) {
+                                    VStack(spacing: 4) {
+                                        Text("\(viewModel.followerCount)")
+                                            .font(.title3)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(colors.primaryText)
+                                        Text("Followers")
+                                            .font(.caption)
+                                            .foregroundColor(colors.secondaryText)
+                                    }
 
-                            // Follower/Following counts
-                            HStack(spacing: 24) {
-                                VStack(spacing: 4) {
-                                    Text("\(viewModel.followerCount)")
-                                        .font(.title3)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(colors.primaryText)
-                                    Text("Followers")
-                                        .font(.caption)
-                                        .foregroundColor(colors.secondaryText)
-                                }
-
-                                VStack(spacing: 4) {
-                                    Text("\(viewModel.followingCount)")
-                                        .font(.title3)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(colors.primaryText)
-                                    Text("Following")
-                                        .font(.caption)
-                                        .foregroundColor(colors.secondaryText)
+                                    VStack(spacing: 4) {
+                                        Text("\(viewModel.followingCount)")
+                                            .font(.title3)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(colors.primaryText)
+                                        Text("Following")
+                                            .font(.caption)
+                                            .foregroundColor(colors.secondaryText)
+                                    }
                                 }
                             }
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(colors.cardBackground)
+                            .cornerRadius(16)
                         }
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(colors.cardBackground)
-                        .cornerRadius(16)
 
                         // Level Card
                         if let levelInfo = viewModel.levelInfo {
@@ -355,10 +352,13 @@ struct ProfileTab: View {
                             }
 
                             Button(action: {
-                                // TODO: Implement logout
-                                // - Call Supabase auth signOut
-                                // - Clear local user data
-                                // - Navigate to login screen
+                                Task {
+                                    do {
+                                        try await supabaseManager.signOut()
+                                    } catch {
+                                        print("Error signing out: \(error)")
+                                    }
+                                }
                             }) {
                                 HStack {
                                     Image(systemName: "rectangle.portrait.and.arrow.right")
@@ -381,6 +381,7 @@ struct ProfileTab: View {
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(themeManager.isDarkMode ? .dark : .light, for: .navigationBar)
             .onAppear {
+                viewModel.updateSupabaseManager(supabaseManager)
                 viewModel.loadUserProfile()
             }
         }

@@ -27,6 +27,19 @@ Follow your friends to see what they are up to outside, and track your own activ
    ```
 7. **IMPORTANT**: Never commit `SupabaseConfig.swift` to version control (it's already gitignored)
 
+### Email Auth in Supabase
+
+1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project
+3. Navigate to **Authentication** → **Providers** in the left sidebar
+4. Find **Email** in the providers list
+5. Make sure **Enable Email provider** is toggled ON
+6. Configure the following settings:
+   - **Confirm email:** Toggle OFF for development (toggle ON for production)
+   - **Secure email change:** Toggle ON (recommended)
+   - **Secure password change:** Toggle ON (recommended)
+7. Click **Save**
+
 ## Tech Stack
 | Layer         | Choice                              |
 | ------------- | ----------------------------------- |
@@ -131,9 +144,9 @@ Goal: Replace fake data with real persistence
 - [ ] Connect views/models to supabase via PostgREST
 
 #### Auth
-- [ ] Apple sign-in
-- [ ] Store user session
-- [ ] Handle log out
+- [x] Sign up/sign in
+- [x] Store user session
+- [x] Handle log out
 
 #### Database Architecture
 - [x] User database objects

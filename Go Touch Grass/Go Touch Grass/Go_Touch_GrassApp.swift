@@ -9,7 +9,7 @@ import SwiftUI
 
 @main
 struct Go_Touch_GrassApp: App {
-    @StateObject private var supabaseManager = SupabaseManager.shared
+    @StateObject private var supabaseManager = SupabaseManager()
     @StateObject private var themeManager = ThemeManager.shared
 
     var body: some Scene {

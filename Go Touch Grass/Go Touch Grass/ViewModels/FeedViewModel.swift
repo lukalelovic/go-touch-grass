@@ -28,7 +28,7 @@ class FeedViewModel: ObservableObject {
         updatedAt: nil
     )
 
-    init(activityStore: ActivityStore = .shared, supabaseManager: SupabaseManager = .shared) {
+    init(activityStore: ActivityStore = .shared, supabaseManager: SupabaseManager = SupabaseManager()) {
         self.activityStore = activityStore
         self.supabaseManager = supabaseManager
         setupBindings()

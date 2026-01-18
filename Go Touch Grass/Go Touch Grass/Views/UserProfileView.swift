@@ -16,7 +16,7 @@ struct UserProfileView: View {
     @State private var activities: [Activity] = []
     @State private var isLoading: Bool = false
     @EnvironmentObject var themeManager: ThemeManager
-    @StateObject private var supabaseManager = SupabaseManager.shared
+    @StateObject private var supabaseManager = SupabaseManager()
     // TODO: Replace with actual current user from Supabase Auth when auth is implemented
     // Using real user from database for now
     private let currentUser = User(

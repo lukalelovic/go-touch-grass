@@ -584,6 +584,7 @@ LEFT JOIN user_badges ub ON u.id = ub.user_id AND b.id = ub.badge_id;
 -- ============================================================================
 
 -- Function to check and auto-award badges based on user stats
+-- SECURITY DEFINER allows this function to bypass RLS and insert badges
 CREATE OR REPLACE FUNCTION check_and_award_badges(p_user_id UUID)
 RETURNS TABLE(badge_id INTEGER, badge_name VARCHAR, newly_awarded BOOLEAN) AS $$
 BEGIN
@@ -636,7 +637,7 @@ BEGIN
         (SELECT name FROM badges WHERE id = user_badges.badge_id),
         true AS newly_awarded;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to get user's current streak (consecutive days with activities)
 CREATE OR REPLACE FUNCTION get_user_streak(p_user_id UUID)
@@ -1002,19 +1003,194 @@ INSERT INTO user_follows (follower_id, following_id) VALUES
 -- LIMIT 10;
 
 -- ============================================================================
+-- Enable Row Level Security (RLS)
+-- ============================================================================
+
+-- Enable RLS on all tables
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_follows ENABLE ROW LEVEL SECURITY;
+ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE activity_likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE activity_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE activity_subtypes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE badges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_badges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE level_milestones ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================================
 -- Security Policies
 -- ============================================================================
-create policy "Public can search usernames"
-on users
-for select
-using (username is not null);
 
--- TODO: below policy currently doesnt work (auth is not setup yet)
-create policy "Users can follow others"
-on user_follows
-for insert
-with check (
-  follower_id = auth.uid()
-);
+-- ----------------------------------------------------------------------------
+-- USERS TABLE POLICIES
+-- ----------------------------------------------------------------------------
 
--- TODO: remaining policies
+-- Anyone can view user profiles (for search and discovery)
+CREATE POLICY "Anyone can view user profiles"
+ON users
+FOR SELECT
+USING (true);
+
+-- Users can insert their own profile during signup
+CREATE POLICY "Users can create their own profile"
+ON users
+FOR INSERT
+WITH CHECK (auth.uid() = id);
+
+-- Users can update their own profile
+CREATE POLICY "Users can update their own profile"
+ON users
+FOR UPDATE
+USING (auth.uid() = id)
+WITH CHECK (auth.uid() = id);
+
+-- Users cannot delete their profile (handle through auth.users deletion)
+-- No DELETE policy = no one can delete
+
+-- ----------------------------------------------------------------------------
+-- USER_FOLLOWS TABLE POLICIES
+-- ----------------------------------------------------------------------------
+
+-- Anyone can view follow relationships (for follower/following lists)
+CREATE POLICY "Anyone can view follow relationships"
+ON user_follows
+FOR SELECT
+USING (true);
+
+-- Users can only create follows where they are the follower
+CREATE POLICY "Users can follow others"
+ON user_follows
+FOR INSERT
+WITH CHECK (follower_id = auth.uid());
+
+-- Users can only delete follows where they are the follower (unfollow)
+CREATE POLICY "Users can unfollow others"
+ON user_follows
+FOR DELETE
+USING (follower_id = auth.uid());
+
+-- No UPDATE policy = follows cannot be modified, only created or deleted
+
+-- ----------------------------------------------------------------------------
+-- ACTIVITIES TABLE POLICIES
+-- ----------------------------------------------------------------------------
+
+-- Anyone can view activities (for feed and profiles)
+-- Note: In production, you might want to restrict this to followed users only
+CREATE POLICY "Anyone can view activities"
+ON activities
+FOR SELECT
+USING (true);
+
+-- Users can only create activities for themselves
+CREATE POLICY "Users can create their own activities"
+ON activities
+FOR INSERT
+WITH CHECK (user_id = auth.uid());
+
+-- Users can only update their own activities
+CREATE POLICY "Users can update their own activities"
+ON activities
+FOR UPDATE
+USING (user_id = auth.uid())
+WITH CHECK (user_id = auth.uid());
+
+-- Users can only delete their own activities
+CREATE POLICY "Users can delete their own activities"
+ON activities
+FOR DELETE
+USING (user_id = auth.uid());
+
+-- ----------------------------------------------------------------------------
+-- ACTIVITY_LIKES TABLE POLICIES
+-- ----------------------------------------------------------------------------
+
+-- Anyone can view likes (for like counts)
+CREATE POLICY "Anyone can view activity likes"
+ON activity_likes
+FOR SELECT
+USING (true);
+
+-- Users can only create likes for themselves
+CREATE POLICY "Users can like activities"
+ON activity_likes
+FOR INSERT
+WITH CHECK (user_id = auth.uid());
+
+-- Users can only delete their own likes (unlike)
+CREATE POLICY "Users can unlike activities"
+ON activity_likes
+FOR DELETE
+USING (user_id = auth.uid());
+
+-- No UPDATE policy = likes cannot be modified
+
+-- ----------------------------------------------------------------------------
+-- ACTIVITY_TYPES TABLE POLICIES
+-- ----------------------------------------------------------------------------
+
+-- Anyone can view activity types (needed for creating activities)
+CREATE POLICY "Anyone can view activity types"
+ON activity_types
+FOR SELECT
+USING (true);
+
+-- Only service role can modify activity types (admin only)
+-- No INSERT, UPDATE, or DELETE policies = only service role can modify
+
+-- ----------------------------------------------------------------------------
+-- ACTIVITY_SUBTYPES TABLE POLICIES
+-- ----------------------------------------------------------------------------
+
+-- Anyone can view activity subtypes
+CREATE POLICY "Anyone can view activity subtypes"
+ON activity_subtypes
+FOR SELECT
+USING (true);
+
+-- Only service role can modify activity subtypes (admin only)
+-- No INSERT, UPDATE, or DELETE policies = only service role can modify
+
+-- ----------------------------------------------------------------------------
+-- BADGES TABLE POLICIES
+-- ----------------------------------------------------------------------------
+
+-- Anyone can view badges (needed for badge system)
+CREATE POLICY "Anyone can view badges"
+ON badges
+FOR SELECT
+USING (true);
+
+-- Only service role can modify badges (admin only)
+-- No INSERT, UPDATE, or DELETE policies = only service role can modify
+
+-- ----------------------------------------------------------------------------
+-- USER_BADGES TABLE POLICIES
+-- ----------------------------------------------------------------------------
+
+-- Anyone can view user badges (for profiles and achievements)
+CREATE POLICY "Anyone can view user badges"
+ON user_badges
+FOR SELECT
+USING (true);
+
+-- Only the badge award function can create user badges
+-- This is handled through the check_and_award_badges function
+-- which runs with elevated privileges
+-- No INSERT policy for users = only server functions can award badges
+
+-- Users cannot delete or update their badges
+-- No UPDATE or DELETE policies = badges are permanent once earned
+
+-- ----------------------------------------------------------------------------
+-- LEVEL_MILESTONES TABLE POLICIES
+-- ----------------------------------------------------------------------------
+
+-- Anyone can view level milestones (needed for level system)
+CREATE POLICY "Anyone can view level milestones"
+ON level_milestones
+FOR SELECT
+USING (true);
+
+-- Only service role can modify level milestones (admin only)
+-- No INSERT, UPDATE, or DELETE policies = only service role can modify

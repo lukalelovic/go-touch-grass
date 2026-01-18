@@ -8,37 +8,47 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var supabaseManager: SupabaseManager
 
     var body: some View {
         let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+        let _ = print("🎨 ContentView body evaluated, isAuthenticated: \(supabaseManager.isAuthenticated)")
 
-        TabView {
-            FeedTab()
-                .tabItem {
-                    Label("Feed", systemImage: "arrow.up.right")
-                }
+        Group {
+            if supabaseManager.isAuthenticated {
+                let _ = print("✅ Showing TabView")
+                TabView {
+                    FeedTab()
+                        .tabItem {
+                            Label("Feed", systemImage: "arrow.up.right")
+                        }
 
-            TouchGrassTab()
-                .tabItem {
-                    Label("Touch Grass", systemImage: "leaf.fill")
-                }
+                    TouchGrassTab()
+                        .tabItem {
+                            Label("Touch Grass", systemImage: "leaf.fill")
+                        }
 
-            ShareTab()
-                .tabItem {
-                    Label("Share", systemImage: "plus.circle.fill")
-                }
+                    ShareTab()
+                        .tabItem {
+                            Label("Share", systemImage: "plus.circle.fill")
+                        }
 
-            ProfileTab()
-                .tabItem {
-                    Label("Profile", systemImage: "person.fill")
+                    ProfileTab()
+                        .tabItem {
+                            Label("Profile", systemImage: "person.fill")
+                        }
                 }
-        }
-        .tint(colors.accent)
-        .onAppear {
-            updateTabBarAppearance(isDarkMode: themeManager.isDarkMode)
-        }
-        .onChange(of: themeManager.isDarkMode) { _, isDarkMode in
-            updateTabBarAppearance(isDarkMode: isDarkMode)
+                .tint(colors.accent)
+                .onAppear {
+                    updateTabBarAppearance(isDarkMode: themeManager.isDarkMode)
+                }
+                .onChange(of: themeManager.isDarkMode) { _, isDarkMode in
+                    updateTabBarAppearance(isDarkMode: isDarkMode)
+                }
+            } else {
+                let _ = print("❌ Showing AuthView")
+                AuthView()
+            }
         }
     }
 
@@ -73,5 +83,6 @@ extension UIView {
 
 #Preview {
     ContentView()
+        .environmentObject(SupabaseManager())
         .environmentObject(ThemeManager.shared)
 }

@@ -10,19 +10,38 @@ import Combine
 import Supabase
 
 class SupabaseManager: ObservableObject {
-    @MainActor static let shared = SupabaseManager()
+    
 
     let client: SupabaseClient
 
-    @MainActor @Published var isAuthenticated = false
-    @MainActor @Published var currentUser: Auth.User?
+    var isAuthenticated = false {
+        willSet {
+            print("🔄 isAuthenticated will change to: \(newValue)")
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        }
+        didSet {
+            print("🔄 isAuthenticated did change to: \(isAuthenticated)")
+        }
+    }
 
-    @MainActor private init() {
+    var currentUser: Auth.User? {
+        willSet {
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        }
+    }
+
+    init() {
         // Initialize Supabase client with credentials from SupabaseConfig
         self.client = SupabaseClient(
             supabaseURL: URL(string: SupabaseConfig.url)!,
             supabaseKey: SupabaseConfig.anonKey
         )
+
+        print("🚀 SupabaseManager initialized")
 
         // Set up auth state listener
         Task {
@@ -32,65 +51,109 @@ class SupabaseManager: ObservableObject {
 
     // MARK: - Auth State Listener
 
-    @MainActor private func setupAuthListener() async {
+    private func setupAuthListener() async {
         for await (event, session) in client.auth.authStateChanges {
-            switch event {
-            case .signedIn:
-                if let session = session {
-                    self.isAuthenticated = true
-                    self.currentUser = session.user
-                    print("User signed in: \(session.user.id)")
-                }
-            case .signedOut:
-                self.isAuthenticated = false
-                self.currentUser = nil
-                print("User signed out")
-            case .initialSession:
-                if let session = session {
-                    self.isAuthenticated = true
-                    self.currentUser = session.user
-                    print("Initial session found: \(session.user.id)")
-                } else {
+            await MainActor.run {
+                switch event {
+                case .signedIn:
+                    if let session = session {
+                        self.isAuthenticated = true
+                        self.currentUser = session.user
+                        print("User signed in: \(session.user.id)")
+                    }
+                case .signedOut:
                     self.isAuthenticated = false
                     self.currentUser = nil
-                    print("No initial session")
+                    print("User signed out")
+                case .initialSession:
+                    if let session = session {
+                        self.isAuthenticated = true
+                        self.currentUser = session.user
+                        print("Initial session found: \(session.user.id)")
+                    } else {
+                        self.isAuthenticated = false
+                        self.currentUser = nil
+                        print("No initial session")
+                    }
+                case .userUpdated:
+                    if let session = session {
+                        self.currentUser = session.user
+                        print("User updated: \(session.user.id)")
+                    }
+                case .tokenRefreshed:
+                    if let session = session {
+                        self.currentUser = session.user
+                        print("Token refreshed for user: \(session.user.id)")
+                    }
+                default:
+                    break
                 }
-            case .userUpdated:
-                if let session = session {
-                    self.currentUser = session.user
-                    print("User updated: \(session.user.id)")
-                }
-            case .tokenRefreshed:
-                if let session = session {
-                    self.currentUser = session.user
-                    print("Token refreshed for user: \(session.user.id)")
-                }
-            default:
-                break
             }
         }
     }
 
-    // MARK: - Auth Methods (Placeholders for future implementation)
+    // MARK: - Auth Methods
 
-    // These methods will be implemented when you're ready to add auth logic to your views
-
-    @MainActor func signInWithEmail(email: String, password: String) async throws {
+    func signInWithEmail(email: String, password: String) async throws {
         let session = try await client.auth.signIn(email: email, password: password)
-        print("Signed in user: \(session.user.id)")
+        await MainActor.run {
+            self.objectWillChange.send()
+            self.isAuthenticated = true
+            self.currentUser = session.user
+            print("✅ Signed in user: \(session.user.id)")
+            print("✅ isAuthenticated is now: \(self.isAuthenticated)")
+        }
     }
 
-    @MainActor func signUpWithEmail(email: String, password: String) async throws {
+    func signUpWithEmail(email: String, password: String, username: String) async throws {
+        // Sign up the user with Supabase Auth
         let session = try await client.auth.signUp(email: email, password: password)
-        print("Signed up user: \(session.user.id)")
+        let userId = session.user.id
+        print("Signed up user: \(userId)")
+
+        // Create user record in the users table
+        // The user's auth.uid() will be the same as their users.id
+        struct UserInsert: Codable {
+            let id: String
+            let username: String
+            let email: String
+        }
+
+        let userData = UserInsert(
+            id: userId.uuidString,
+            username: username,
+            email: email
+        )
+
+        do {
+            // Insert and request the created record back
+            let response = try await client
+                .from("users")
+                .insert(userData)
+                .select()
+                .single()
+                .execute()
+
+            print("Created user record for: \(username)")
+            print("Response data: \(String(data: response.data, encoding: .utf8) ?? "none")")
+
+            // Update auth state
+            objectWillChange.send()
+            self.isAuthenticated = true
+            self.currentUser = session.user
+            print("✅ Signup complete - isAuthenticated: \(self.isAuthenticated)")
+        } catch {
+            print("Error creating user record: \(error)")
+            throw error
+        }
     }
 
-    @MainActor func signOut() async throws {
+    func signOut() async throws {
         try await client.auth.signOut()
         print("User signed out")
     }
 
-    @MainActor func signInWithApple() async throws {
+    func signInWithApple() async throws {
         // Apple Sign-In implementation will go here
         // This requires additional setup with Sign in with Apple
         throw NSError(domain: "SupabaseManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Apple Sign-In not yet implemented"])
@@ -100,7 +163,7 @@ class SupabaseManager: ObservableObject {
 
     /// Fetch activities from followed users (feed)
     /// Shows activities from users that the current user follows, plus their own activities
-    @MainActor func fetchFeedActivities(for userId: UUID, limit: Int = 50) async throws -> [Activity] {
+    func fetchFeedActivities(for userId: UUID, limit: Int = 50) async throws -> [Activity] {
         // First, get the list of users that this user follows
         let followsResponse = try await client
             .from("user_follows")
@@ -130,7 +193,7 @@ class SupabaseManager: ObservableObject {
     }
 
     /// Fetch activities for a specific user (profile view)
-    @MainActor func fetchUserActivities(userId: UUID, limit: Int = 50) async throws -> [Activity] {
+    func fetchUserActivities(userId: UUID, limit: Int = 50) async throws -> [Activity] {
         let response = try await client
             .from("activities_with_stats")
             .select()
@@ -146,7 +209,7 @@ class SupabaseManager: ObservableObject {
     }
 
     /// Create a new activity
-    @MainActor func createActivity(
+    func createActivity(
         userId: UUID,
         activityType: ActivityType,
         notes: String?,
@@ -218,7 +281,7 @@ class SupabaseManager: ObservableObject {
     }
 
     /// Delete an activity
-    @MainActor func deleteActivity(activityId: UUID) async throws {
+    func deleteActivity(activityId: UUID) async throws {
         try await client
             .from("activities")
             .delete()
@@ -227,7 +290,7 @@ class SupabaseManager: ObservableObject {
     }
 
     /// Get today's activity count for a user
-    @MainActor func getTodayActivityCount(userId: UUID) async throws -> Int {
+    func getTodayActivityCount(userId: UUID) async throws -> Int {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: Date())
         let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
@@ -246,7 +309,7 @@ class SupabaseManager: ObservableObject {
     // MARK: - User Methods
 
     /// Fetch user by ID
-    @MainActor func fetchUser(userId: UUID) async throws -> User {
+    func fetchUser(userId: UUID) async throws -> User {
         let response = try await client
             .from("users")
             .select()
@@ -261,7 +324,7 @@ class SupabaseManager: ObservableObject {
     }
 
     /// Search users by username (case-insensitive)
-    @MainActor func searchUsers(query: String, limit: Int = 20) async throws -> [User] {
+    func searchUsers(query: String, limit: Int = 20) async throws -> [User] {
         let response = try await client
             .from("users")
             .select()
@@ -278,7 +341,7 @@ class SupabaseManager: ObservableObject {
     // MARK: - Follow Methods
 
     /// Toggle follow/unfollow a user
-    @MainActor func toggleFollow(followerId: UUID, followingId: UUID) async throws -> Bool {
+    func toggleFollow(followerId: UUID, followingId: UUID) async throws -> Bool {
         let response = try await client.rpc(
             "toggle_user_follow",
             params: [
@@ -292,7 +355,7 @@ class SupabaseManager: ObservableObject {
     }
 
     /// Check if user is following another user
-    @MainActor func isFollowing(followerId: UUID, followingId: UUID) async throws -> Bool {
+    func isFollowing(followerId: UUID, followingId: UUID) async throws -> Bool {
         let response = try await client.rpc(
             "is_following",
             params: [
@@ -306,7 +369,7 @@ class SupabaseManager: ObservableObject {
     }
 
     /// Get follower count for a user
-    @MainActor func getFollowerCount(userId: UUID) async throws -> Int {
+    func getFollowerCount(userId: UUID) async throws -> Int {
         let response = try await client.rpc(
             "get_follower_count",
             params: ["p_user_id": userId.uuidString]
@@ -317,7 +380,7 @@ class SupabaseManager: ObservableObject {
     }
 
     /// Get following count for a user
-    @MainActor func getFollowingCount(userId: UUID) async throws -> Int {
+    func getFollowingCount(userId: UUID) async throws -> Int {
         let response = try await client.rpc(
             "get_following_count",
             params: ["p_user_id": userId.uuidString]
@@ -330,7 +393,7 @@ class SupabaseManager: ObservableObject {
     // MARK: - Like Methods
 
     /// Toggle like on an activity
-    @MainActor func toggleLike(activityId: UUID, userId: UUID) async throws -> Bool {
+    func toggleLike(activityId: UUID, userId: UUID) async throws -> Bool {
         let response = try await client.rpc(
             "toggle_activity_like",
             params: [
@@ -344,7 +407,7 @@ class SupabaseManager: ObservableObject {
     }
 
     /// Check if user has liked an activity
-    @MainActor func hasLiked(activityId: UUID, userId: UUID) async throws -> Bool {
+    func hasLiked(activityId: UUID, userId: UUID) async throws -> Bool {
         let response = try await client.rpc(
             "has_user_liked_activity",
             params: [
@@ -360,7 +423,7 @@ class SupabaseManager: ObservableObject {
     // MARK: - Stats and Badges Methods
 
     /// Get user stats
-    @MainActor func getUserStats(userId: UUID) async throws -> UserStats {
+    func getUserStats(userId: UUID) async throws -> UserStats {
         let response = try await client
             .from("user_stats")
             .select()
@@ -375,7 +438,7 @@ class SupabaseManager: ObservableObject {
     }
 
     /// Get user level info
-    @MainActor func getUserLevelInfo(userId: UUID) async throws -> UserLevelInfo {
+    func getUserLevelInfo(userId: UUID) async throws -> UserLevelInfo {
         let response = try await client
             .from("user_current_levels")
             .select()
@@ -390,7 +453,7 @@ class SupabaseManager: ObservableObject {
     }
 
     /// Get user badge progress
-    @MainActor func getUserBadgeProgress(userId: UUID) async throws -> [BadgeProgress] {
+    func getUserBadgeProgress(userId: UUID) async throws -> [BadgeProgress] {
         let response = try await client
             .from("user_badge_progress")
             .select()
@@ -459,7 +522,7 @@ class SupabaseManager: ObservableObject {
     }
 
     /// Get user streak
-    @MainActor func getUserStreak(userId: UUID) async throws -> Int {
+    func getUserStreak(userId: UUID) async throws -> Int {
         let response = try await client.rpc(
             "get_user_streak",
             params: ["p_user_id": userId.uuidString]
@@ -470,7 +533,7 @@ class SupabaseManager: ObservableObject {
     }
 
     /// Check and award badges to a user
-    @MainActor func checkAndAwardBadges(userId: UUID) async throws {
+    func checkAndAwardBadges(userId: UUID) async throws {
         _ = try await client.rpc(
             "check_and_award_badges",
             params: ["p_user_id": userId.uuidString]
