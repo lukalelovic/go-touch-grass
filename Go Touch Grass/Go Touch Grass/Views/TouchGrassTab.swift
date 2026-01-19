@@ -159,8 +159,10 @@ struct LocalEventRowView: View {
                             .lineLimit(2)
 
                         HStack(spacing: 4) {
-                            Image(systemName: event.eventType.icon)
-                                .font(.caption)
+                            if let icon = event.eventType.icon {
+                                Image(systemName: icon)
+                                    .font(.caption)
+                            }
                             Text(event.eventType.rawValue)
                                 .font(.caption)
                         }
@@ -242,9 +244,13 @@ struct LocalEventDetailView: View {
                     RoundedRectangle(cornerRadius: 16)
                         .fill(Color.gray.opacity(0.3))
                         .overlay(
-                            Image(systemName: event.eventType.icon)
-                                .font(.system(size: 60))
-                                .foregroundColor(.white.opacity(0.7))
+                            Group {
+                                if let icon = event.eventType.icon {
+                                    Image(systemName: icon)
+                                        .font(.system(size: 60))
+                                        .foregroundColor(.white.opacity(0.7))
+                                }
+                            }
                         )
                         .frame(height: 250)
 
@@ -257,7 +263,9 @@ struct LocalEventDetailView: View {
                                 .foregroundColor(colors.primaryText)
 
                             HStack(spacing: 6) {
-                                Image(systemName: event.eventType.icon)
+                                if let icon = event.eventType.icon {
+                                    Image(systemName: icon)
+                                }
                                 Text(event.eventType.rawValue)
                             }
                             .font(.subheadline)

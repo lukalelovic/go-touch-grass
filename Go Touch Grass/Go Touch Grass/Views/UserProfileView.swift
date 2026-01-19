@@ -110,12 +110,14 @@ struct UserProfileView: View {
                             ForEach(activities) { activity in
                                 NavigationLink(destination: ActivityDetailView(activity: activity)) {
                                     HStack(spacing: 12) {
-                                        Image(systemName: activity.activityType.icon)
-                                            .font(.title2)
-                                            .foregroundColor(.white)
-                                            .frame(width: 50, height: 50)
-                                            .background(colors.eventCardBackground)
-                                            .cornerRadius(10)
+                                        if let icon = activity.activityType.icon {
+                                            Image(systemName: icon)
+                                                .font(.title2)
+                                                .foregroundColor(.white)
+                                                .frame(width: 50, height: 50)
+                                                .background(colors.eventCardBackground)
+                                                .cornerRadius(10)
+                                        }
 
                                         VStack(alignment: .leading, spacing: 4) {
                                             Text(activity.activityType.rawValue)

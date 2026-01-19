@@ -67,6 +67,14 @@ class ProfileViewModel: ObservableObject {
         }
     }
 
+    func refreshProfile() async {
+        await fetchUserProfile()
+        // Force UI update
+        await MainActor.run {
+            self.objectWillChange.send()
+        }
+    }
+
     private func fetchUserProfile() async {
         isLoading = true
         errorMessage = nil

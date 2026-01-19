@@ -11,6 +11,7 @@ struct ProfileTab: View {
     @StateObject private var viewModel = ProfileViewModel()
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var supabaseManager: SupabaseManager
+    @State private var refreshTrigger = UUID()
 
     var body: some View {
         let colors = AppColors(isDarkMode: themeManager.isDarkMode)
@@ -277,12 +278,14 @@ struct ProfileTab: View {
                                 ForEach(viewModel.userActivities.prefix(5)) { activity in
                                     NavigationLink(destination: ActivityDetailView(activity: activity)) {
                                         HStack(spacing: 12) {
-                                            Image(systemName: activity.activityType.icon)
-                                                .font(.title2)
-                                                .foregroundColor(.white)
-                                                .frame(width: 50, height: 50)
-                                                .background(colors.eventCardBackground)
-                                                .cornerRadius(10)
+                                            if let icon = activity.activityType.icon {
+                                                Image(systemName: icon)
+                                                    .font(.title2)
+                                                    .foregroundColor(.white)
+                                                    .frame(width: 50, height: 50)
+                                                    .background(colors.eventCardBackground)
+                                                    .cornerRadius(10)
+                                            }
 
                                             VStack(alignment: .leading, spacing: 4) {
                                                 Text(activity.activityType.rawValue)
@@ -378,9 +381,20 @@ struct ProfileTab: View {
             .toolbarBackground(colors.primaryBackground, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(themeManager.isDarkMode ? .dark : .light, for: .navigationBar)
-            .onAppear {
+            .task(id: refreshTrigger) {
                 viewModel.updateSupabaseManager(supabaseManager)
-                viewModel.loadUserProfile()
+                await viewModel.refreshProfile()
+            }
+            .refreshable {
+                await viewModel.refreshProfile()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RefreshProfile"))) { _ in
+                print("🔔 ProfileTab received RefreshProfile notification")
+                Task {
+                    print("🔄 ProfileTab calling refreshProfile()")
+                    await viewModel.refreshProfile()
+                    print("✅ ProfileTab refreshProfile() completed - new URL: \(viewModel.currentUser?.profilePictureUrl ?? "nil")")
+                }
             }
         }
     }

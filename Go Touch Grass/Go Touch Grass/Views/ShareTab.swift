@@ -28,19 +28,32 @@ struct ShareTab: View {
                                 .font(.headline)
                                 .foregroundColor(colors.primaryText)
 
-                            Picker("Activity Type", selection: $viewModel.selectedActivityType) {
-                                ForEach(ActivityType.allCases, id: \.self) { type in
-                                    HStack {
-                                        Image(systemName: type.icon)
-                                        Text(type.rawValue)
-                                    }
-                                    .tag(type)
+                            if viewModel.isLoadingActivityTypes {
+                                HStack {
+                                    Spacer()
+                                    ProgressView()
+                                    Spacer()
                                 }
+                                .padding()
+                                .background(colors.cardBackground)
+                                .cornerRadius(12)
+                            } else {
+                                Picker("Activity Type", selection: $viewModel.selectedActivityType) {
+                                    ForEach(viewModel.availableActivityTypes) { type in
+                                        HStack {
+                                            if let icon = type.icon {
+                                                Image(systemName: icon)
+                                            }
+                                            Text(type.name)
+                                        }
+                                        .tag(type)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .padding()
+                                .background(colors.cardBackground)
+                                .cornerRadius(12)
                             }
-                            .pickerStyle(.menu)
-                            .padding()
-                            .background(colors.cardBackground)
-                            .cornerRadius(12)
                         }
 
                         // Notes Text Field
@@ -166,6 +179,7 @@ struct ShareTab: View {
             }
             .onAppear {
                 viewModel.updateSupabaseManager(supabaseManager)
+                viewModel.loadActivityTypes()
             }
         }
     }

@@ -25,6 +25,7 @@ struct Activity: Identifiable, Codable {
         case username
         case email
         case profilePictureUrl = "profile_picture_url"
+        case activityTypeId = "activity_type_id"
         case activityTypeName = "activity_type_name"
         case activityTypeIcon = "activity_type_icon"
         case notes
@@ -79,10 +80,16 @@ struct Activity: Identifiable, Codable {
         )
 
         // Decode activity type from flattened structure
+        let activityTypeId = try container.decode(Int.self, forKey: .activityTypeId)
         let activityTypeName = try container.decode(String.self, forKey: .activityTypeName)
         let activityTypeIcon = try container.decodeIfPresent(String.self, forKey: .activityTypeIcon)
 
-        activityType = ActivityType(rawValue: activityTypeName) ?? .other
+        // Create ActivityType with actual ID from database
+        activityType = ActivityType(
+            id: activityTypeId,
+            name: activityTypeName,
+            icon: activityTypeIcon ?? ActivityType.fallbackIcon(for: activityTypeName)
+        )
 
         timestamp = try container.decode(Date.self, forKey: .timestamp)
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
@@ -125,54 +132,54 @@ struct Activity: Identifiable, Codable {
     }
 }
 
-// MARK: - Sample Hardcoded Data
+// MARK: - Sample Data (for previews)
 extension Activity {
     static let sampleActivities: [Activity] = [
         Activity(
             user: User.sampleUsers[0],
-            activityType: .hiking,
+            activityType: ActivityType(id: 1, name: "Hiking", icon: "figure.hiking"),
             timestamp: Date().addingTimeInterval(-3600),
             notes: "Beautiful sunrise hike at the peak! The view was absolutely worth the early wake-up.",
             location: Location(latitude: 34.0, longitude: -118.0, name: "Mountain Trail")
         ),
         Activity(
             user: User.sampleUsers[1],
-            activityType: .running,
+            activityType: ActivityType(id: 2, name: "Running", icon: "figure.run"),
             timestamp: Date().addingTimeInterval(-7200),
             notes: "Morning 5K run through the park. Feeling energized!",
             location: Location(latitude: 34.1, longitude: -118.1, name: "City Park")
         ),
         Activity(
             user: User.sampleUsers[2],
-            activityType: .cycling,
+            activityType: ActivityType(id: 3, name: "Cycling", icon: "bicycle"),
             timestamp: Date().addingTimeInterval(-10800),
             notes: "30 mile bike ride along the coast. Perfect weather today.",
             location: Location(latitude: 33.9, longitude: -118.2, name: "Coastal Path")
         ),
         Activity(
             user: User.sampleUsers[3],
-            activityType: .swimming,
+            activityType: ActivityType(id: 4, name: "Swimming", icon: "figure.pool.swim"),
             timestamp: Date().addingTimeInterval(-14400),
             notes: "Refreshing swim at the beach!",
             location: Location(latitude: 33.8, longitude: -118.3, name: "Sunset Beach")
         ),
         Activity(
             user: User.sampleUsers[4],
-            activityType: .climbing,
+            activityType: ActivityType(id: 5, name: "Climbing", icon: "figure.climbing"),
             timestamp: Date().addingTimeInterval(-18000),
             notes: "Finally conquered that difficult route I've been working on for weeks!",
             location: Location(latitude: 34.2, longitude: -117.9, name: "Rock Climbing Gym")
         ),
         Activity(
             user: User.sampleUsers[0],
-            activityType: .walking,
+            activityType: ActivityType(id: 10, name: "Walking", icon: "figure.walk"),
             timestamp: Date().addingTimeInterval(-21600),
             notes: "Evening walk with the dog. Found a new trail!",
             location: Location(latitude: 34.05, longitude: -118.05, name: "Neighborhood Trail")
         ),
         Activity(
             user: User.sampleUsers[2],
-            activityType: .camping,
+            activityType: ActivityType(id: 7, name: "Camping", icon: "tent.fill"),
             timestamp: Date().addingTimeInterval(-86400),
             notes: "Weekend camping trip under the stars. No cell service, just nature.",
             location: Location(latitude: 35.0, longitude: -119.0, name: "National Forest Campground")

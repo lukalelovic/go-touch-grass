@@ -50,6 +50,7 @@ class SettingsViewModel: ObservableObject {
                 let user = try await supabaseManager.fetchUser(userId: authUser.id)
                 newUsername = user.username
                 profilePictureUrl = user.profilePictureUrl
+                print("🔵 Loaded user data - profilePictureUrl: \(user.profilePictureUrl ?? "nil")")
             } catch {
                 print("Error loading user data: \(error)")
             }
@@ -106,24 +107,38 @@ class SettingsViewModel: ObservableObject {
         isUploadingPhoto = true
 
         do {
+            // Delete old profile picture from storage if exists
+            if let oldUrl = profilePictureUrl {
+                print("🔄 Deleting old profile picture: \(oldUrl)")
+                try? await supabaseManager.deleteProfilePicture(url: oldUrl)
+            }
+
             // Load image data
             guard let imageData = try await selectedPhoto.loadTransferable(type: Data.self) else {
                 throw NSError(domain: "SettingsViewModel", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to load image"])
             }
 
-            // For now, we'll just save as base64 string since Supabase Storage upload is complex
-            // In production, you'd upload to Supabase Storage and get a URL
-            // Placeholder: just update with a placeholder URL
-            let placeholderUrl = "user_\(userId.uuidString)_\(Date().timeIntervalSince1970).jpg"
+            // Upload to Supabase Storage and get the public URL
+            let publicURL = try await supabaseManager.uploadProfilePicture(userId: userId, imageData: imageData)
+            print("✅ Uploaded new profile picture: \(publicURL)")
 
             // Update database with picture URL
-            try await supabaseManager.updateProfilePicture(userId: userId, pictureUrl: placeholderUrl)
+            try await supabaseManager.updateProfilePicture(userId: userId, pictureUrl: publicURL)
 
-            profilePictureUrl = placeholderUrl
+            // Verify the update by fetching the user again
+            let updatedUser = try await supabaseManager.fetchUser(userId: userId)
+            print("🔍 Verification - profile_picture_url after upload: \(updatedUser.profilePictureUrl ?? "nil")")
+
+            profilePictureUrl = publicURL
             successMessage = "Profile picture updated successfully!"
             showSuccessAlert = true
             isUploadingPhoto = false
             self.selectedPhoto = nil
+
+            // Notify other views to refresh profile data
+            await MainActor.run {
+                NotificationCenter.default.post(name: NSNotification.Name("RefreshProfile"), object: nil)
+            }
         } catch {
             errorMessage = "Failed to upload profile picture: \(error.localizedDescription)"
             showErrorAlert = true
@@ -143,11 +158,26 @@ class SettingsViewModel: ObservableObject {
                 }
 
                 // Update database to remove URL
+                print("🔴 Removing profile picture for user: \(userId)")
                 try await supabaseManager.updateProfilePicture(userId: userId, pictureUrl: nil)
+                print("✅ Database updated successfully, profile_picture_url set to nil")
+
+                // Verify the update by fetching the user again
+                let updatedUser = try await supabaseManager.fetchUser(userId: userId)
+                print("🔍 Verification - profile_picture_url after update: \(updatedUser.profilePictureUrl ?? "nil")")
+
+                if updatedUser.profilePictureUrl != nil {
+                    throw NSError(domain: "SettingsViewModel", code: -1, userInfo: [NSLocalizedDescriptionKey: "Profile picture URL was not cleared in database"])
+                }
 
                 profilePictureUrl = nil
                 successMessage = "Profile picture removed"
                 showSuccessAlert = true
+
+                // Notify other views to refresh profile data
+                await MainActor.run {
+                    NotificationCenter.default.post(name: NSNotification.Name("RefreshProfile"), object: nil)
+                }
             } catch {
                 errorMessage = "Failed to remove profile picture: \(error.localizedDescription)"
                 showErrorAlert = true

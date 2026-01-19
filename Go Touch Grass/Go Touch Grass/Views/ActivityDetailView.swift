@@ -41,7 +41,9 @@ struct ActivityDetailView: View {
                                             .foregroundColor(colors.primaryText)
 
                                         HStack(spacing: 6) {
-                                            Image(systemName: activity.activityType.icon)
+                                            if let icon = activity.activityType.icon {
+                                                Image(systemName: icon)
+                                            }
                                             Text(activity.activityType.rawValue)
                                         }
                                         .font(.subheadline)

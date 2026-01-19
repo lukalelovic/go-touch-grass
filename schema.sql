@@ -1035,17 +1035,23 @@ FOR SELECT
 USING (true);
 
 -- Users can insert their own profile during signup
+-- Drop existing policy if it exists to recreate with proper casting
+DROP POLICY IF EXISTS "Users can create their own profile" ON users;
+
 CREATE POLICY "Users can create their own profile"
 ON users
 FOR INSERT
-WITH CHECK (auth.uid() = id);
+WITH CHECK (auth.uid()::uuid = id::uuid);
 
 -- Users can update their own profile
+-- Drop existing policy if it exists to recreate with proper casting
+DROP POLICY IF EXISTS "Users can update their own profile" ON users;
+
 CREATE POLICY "Users can update their own profile"
 ON users
 FOR UPDATE
-USING (auth.uid() = id)
-WITH CHECK (auth.uid() = id);
+USING (auth.uid()::uuid = id::uuid)
+WITH CHECK (auth.uid()::uuid = id::uuid);
 
 -- Users cannot delete their profile (handle through auth.users deletion)
 -- No DELETE policy = no one can delete
@@ -1194,6 +1200,90 @@ CREATE POLICY "Anyone can view level milestones"
 ON level_milestones
 FOR SELECT
 USING (true);
+
+-- ----------------------------------------------------------------------------
+-- STORAGE POLICIES FOR AVATARS BUCKET
+-- ----------------------------------------------------------------------------
+
+-- Create the avatars bucket if it doesn't exist
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('avatars', 'avatars', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can upload their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can view avatars" ON storage.objects;
+
+-- Allow authenticated users to upload their own avatar
+CREATE POLICY "Users can upload their own avatar"
+ON storage.objects
+FOR INSERT
+TO authenticated
+WITH CHECK (
+    bucket_id = 'avatars' AND
+    (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Allow authenticated users to update their own avatar
+CREATE POLICY "Users can update their own avatar"
+ON storage.objects
+FOR UPDATE
+TO authenticated
+USING (
+    bucket_id = 'avatars' AND
+    (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Allow authenticated users to delete their own avatar
+CREATE POLICY "Users can delete their own avatar"
+ON storage.objects
+FOR DELETE
+TO authenticated
+USING (
+    bucket_id = 'avatars' AND
+    (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Allow anyone to view avatars (public bucket)
+CREATE POLICY "Anyone can view avatars"
+ON storage.objects
+FOR SELECT
+USING (bucket_id = 'avatars');
+
+-- ----------------------------------------------------------------------------
+
+-- ============================================================================
+-- USER PROFILE PICTURE UPDATE FUNCTION
+-- ============================================================================
+
+-- Function to update user profile picture URL
+-- This function runs with SECURITY DEFINER to bypass RLS
+DROP FUNCTION IF EXISTS update_user_profile_picture(UUID, TEXT);
+
+CREATE OR REPLACE FUNCTION update_user_profile_picture(
+    p_user_id UUID,
+    p_picture_url TEXT
+)
+RETURNS TABLE(id UUID, profile_picture_url TEXT) AS $$
+BEGIN
+    -- Security check: only allow users to update their own profile picture
+    IF p_user_id != auth.uid() THEN
+        RAISE EXCEPTION 'Unauthorized: Cannot update another user''s profile picture';
+    END IF;
+
+    -- Update and return the result
+    RETURN QUERY
+    UPDATE users
+    SET profile_picture_url = p_picture_url,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE users.id = p_user_id
+    RETURNING users.id, users.profile_picture_url;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ----------------------------------------------------------------------------
 
 -- Only service role can modify level milestones (admin only)
 -- No INSERT, UPDATE, or DELETE policies = only service role can modify

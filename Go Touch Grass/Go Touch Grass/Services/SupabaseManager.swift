@@ -9,6 +9,37 @@ import Foundation
 import Combine
 import Supabase
 
+// MARK: - Profile Picture Update Types
+
+struct UpdateProfilePictureParams: Sendable {
+    let p_user_id: String
+    let p_picture_url: String?
+}
+
+// Explicit non-isolated Encodable conformance
+extension UpdateProfilePictureParams: Encodable {
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(p_user_id, forKey: .p_user_id)
+        try container.encode(p_picture_url, forKey: .p_picture_url)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case p_user_id
+        case p_picture_url
+    }
+}
+
+struct UpdateProfilePictureResponse: Codable, Sendable {
+    let id: String
+    let profilePictureUrl: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case profilePictureUrl = "profile_picture_url"
+    }
+}
+
 class SupabaseManager: ObservableObject {
     
 
@@ -159,6 +190,22 @@ class SupabaseManager: ObservableObject {
         throw NSError(domain: "SupabaseManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Apple Sign-In not yet implemented"])
     }
 
+    // MARK: - Activity Type Methods
+
+    /// Fetch all activity types from the database
+    func fetchActivityTypes() async throws -> [ActivityType] {
+        let response = try await client
+            .from("activity_types")
+            .select()
+            .order("name", ascending: true)
+            .execute()
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let activityTypes = try decoder.decode([ActivityType].self, from: response.data)
+        return activityTypes
+    }
+
     // MARK: - Activity Methods
 
     /// Fetch activities from followed users (feed)
@@ -216,17 +263,24 @@ class SupabaseManager: ObservableObject {
         location: Location?,
         timestamp: Date = Date()
     ) async throws -> Activity {
-        // Get the activity type ID from the database
-        let activityTypeResponse = try await client
-            .from("activity_types")
-            .select("id")
-            .eq("name", value: activityType.rawValue)
-            .single()
-            .execute()
+        // Use the activity type ID directly if available (id > 0), otherwise look it up
+        let activityTypeId: Int
+        if activityType.id > 0 {
+            activityTypeId = activityType.id
+        } else {
+            // Fallback: lookup by name for backward compatibility
+            let activityTypeResponse = try await client
+                .from("activity_types")
+                .select("id")
+                .eq("name", value: activityType.name)
+                .single()
+                .execute()
 
-        let activityTypeData = try JSONSerialization.jsonObject(with: activityTypeResponse.data) as? [String: Any]
-        guard let activityTypeId = activityTypeData?["id"] as? Int else {
-            throw NSError(domain: "SupabaseManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Activity type not found"])
+            let activityTypeData = try JSONSerialization.jsonObject(with: activityTypeResponse.data) as? [String: Any]
+            guard let typeId = activityTypeData?["id"] as? Int else {
+                throw NSError(domain: "SupabaseManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Activity type not found"])
+            }
+            activityTypeId = typeId
         }
 
         // Prepare activity data
@@ -591,23 +645,66 @@ class SupabaseManager: ObservableObject {
             .execute()
     }
 
-    /// Update profile picture URL
-    func updateProfilePicture(userId: UUID, pictureUrl: String?) async throws {
-        struct ProfilePictureUpdate: Codable {
-            let profilePictureUrl: String?
+    /// Upload profile picture to Supabase Storage
+    func uploadProfilePicture(userId: UUID, imageData: Data) async throws -> String {
+        // Generate a unique filename with timestamp to avoid caching issues
+        let timestamp = Date().timeIntervalSince1970
+        let fileName = "profile_\(timestamp).jpg"
+        let filePath = "\(userId.uuidString)/\(fileName)"
 
-            enum CodingKeys: String, CodingKey {
-                case profilePictureUrl = "profile_picture_url"
-            }
+        // Upload new image to Supabase Storage
+        _ = try await client.storage
+            .from("avatars")
+            .upload(
+                path: filePath,
+                file: imageData,
+                options: .init(
+                    contentType: "image/jpeg",
+                    upsert: false  // Don't upsert since we're using unique filenames
+                )
+            )
+
+        // Get public URL
+        let publicURL = try client.storage
+            .from("avatars")
+            .getPublicURL(path: filePath)
+
+        return publicURL.absoluteString
+    }
+
+    /// Update profile picture URL using database function to bypass RLS issues
+    nonisolated func updateProfilePicture(userId: UUID, pictureUrl: String?) async throws {
+        print("🔴 Updating profile picture for user: \(userId.uuidString)")
+        print("🔴 New value: \(pictureUrl ?? "nil")")
+
+        // Use the database function which runs with SECURITY DEFINER to bypass RLS
+        let params = UpdateProfilePictureParams(
+            p_user_id: userId.uuidString,
+            p_picture_url: pictureUrl
+        )
+
+        let response = try await client.rpc(
+            "update_user_profile_picture",
+            params: params
+        ).execute()
+
+        print("📊 RPC response status: \(response.response.statusCode)")
+        print("📊 RPC response data: \(String(data: response.data, encoding: .utf8) ?? "no data")")
+
+        // Decode the response
+        let decoder = JSONDecoder()
+        let updatedUsers = try decoder.decode([UpdateProfilePictureResponse].self, from: response.data)
+
+        guard let updatedUser = updatedUsers.first else {
+            throw NSError(domain: "SupabaseManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to update profile picture - function returned no results"])
         }
 
-        let update = ProfilePictureUpdate(profilePictureUrl: pictureUrl)
+        print("✅ Update verified - profile_picture_url is now: \(updatedUser.profilePictureUrl ?? "nil")")
 
-        _ = try await client
-            .from("users")
-            .update(update)
-            .eq("id", value: userId.uuidString)
-            .execute()
+        // Final check to ensure the value matches what we expected
+        if updatedUser.profilePictureUrl != pictureUrl {
+            throw NSError(domain: "SupabaseManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Update verification failed - expected \(pictureUrl ?? "nil"), got \(updatedUser.profilePictureUrl ?? "nil")"])
+        }
     }
 
     /// Delete profile picture from storage

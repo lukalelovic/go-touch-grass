@@ -11,13 +11,15 @@ import Auth
 
 @MainActor
 class ShareViewModel: ObservableObject {
-    @Published var selectedActivityType: ActivityType = .hiking
+    @Published var availableActivityTypes: [ActivityType] = [ActivityType.hiking]
+    @Published var selectedActivityType: ActivityType = ActivityType.hiking
     @Published var notes: String = ""
     @Published var selectedLocation: Location?
     @Published var showLocationPicker = false
     @Published var showSuccessAlert = false
     @Published var errorMessage: String?
     @Published var isSaving = false
+    @Published var isLoadingActivityTypes = false
 
     private let activityStore: ActivityStore
     private var supabaseManager: SupabaseManager
@@ -29,6 +31,29 @@ class ShareViewModel: ObservableObject {
 
     func updateSupabaseManager(_ manager: SupabaseManager) {
         self.supabaseManager = manager
+    }
+
+    func loadActivityTypes() {
+        Task {
+            await loadActivityTypesAsync()
+        }
+    }
+
+    private func loadActivityTypesAsync() async {
+        isLoadingActivityTypes = true
+        do {
+            let types = try await supabaseManager.fetchActivityTypes()
+            if !types.isEmpty {
+                availableActivityTypes = types
+                // Always select the first type from database
+                selectedActivityType = types[0]
+            }
+            isLoadingActivityTypes = false
+        } catch {
+            print("Failed to load activity types: \(error)")
+            // Keep hiking as fallback (already initialized)
+            isLoadingActivityTypes = false
+        }
     }
 
     // MARK: - Public Methods
@@ -93,7 +118,10 @@ class ShareViewModel: ObservableObject {
     }
 
     func clearForm() {
-        selectedActivityType = .hiking
+        // Reset to first available type
+        if let firstType = availableActivityTypes.first {
+            selectedActivityType = firstType
+        }
         notes = ""
         selectedLocation = nil
     }

@@ -30,8 +30,10 @@ struct ActivityRowView: View {
                                 .foregroundColor(.white)
 
                             HStack(spacing: 4) {
-                                Image(systemName: activity.activityType.icon)
-                                    .font(.caption)
+                                if let icon = activity.activityType.icon {
+                                    Image(systemName: icon)
+                                        .font(.caption)
+                                }
                                 Text(activity.activityType.rawValue)
                                     .font(.subheadline)
                             }
