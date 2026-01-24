@@ -478,6 +478,129 @@ class SupabaseManager: ObservableObject {
         return result
     }
 
+    // MARK: - Follow Request Methods
+
+    /// Send a follow request (or directly follow if account is public)
+    func sendFollowRequest(requesterId: UUID, requestedId: UUID) async throws -> SendFollowRequestResult {
+        let response = try await client.rpc(
+            "send_follow_request",
+            params: [
+                "p_requester_id": requesterId.uuidString,
+                "p_requested_id": requestedId.uuidString
+            ]
+        ).execute()
+
+        // The function returns a table, so we need to decode an array and take the first element
+        let results = try JSONDecoder().decode([SendFollowRequestResult].self, from: response.data)
+        guard let result = results.first else {
+            throw NSError(domain: "SupabaseManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "No result returned from send_follow_request"])
+        }
+        return result
+    }
+
+    /// Accept a follow request
+    func acceptFollowRequest(requesterId: UUID, requestedId: UUID) async throws -> Bool {
+        let response = try await client.rpc(
+            "accept_follow_request",
+            params: [
+                "p_requester_id": requesterId.uuidString,
+                "p_requested_id": requestedId.uuidString
+            ]
+        ).execute()
+
+        let result = try JSONDecoder().decode(Bool.self, from: response.data)
+        return result
+    }
+
+    /// Reject a follow request
+    func rejectFollowRequest(requesterId: UUID, requestedId: UUID) async throws -> Bool {
+        let response = try await client.rpc(
+            "reject_follow_request",
+            params: [
+                "p_requester_id": requesterId.uuidString,
+                "p_requested_id": requestedId.uuidString
+            ]
+        ).execute()
+
+        let result = try JSONDecoder().decode(Bool.self, from: response.data)
+        return result
+    }
+
+    /// Cancel a follow request (by the requester)
+    func cancelFollowRequest(requesterId: UUID, requestedId: UUID) async throws -> Bool {
+        let response = try await client.rpc(
+            "cancel_follow_request",
+            params: [
+                "p_requester_id": requesterId.uuidString,
+                "p_requested_id": requestedId.uuidString
+            ]
+        ).execute()
+
+        let result = try JSONDecoder().decode(Bool.self, from: response.data)
+        return result
+    }
+
+    /// Get pending follow requests (requests received by user)
+    func getPendingFollowRequests(userId: UUID) async throws -> [FollowRequestWithUser] {
+        let response = try await client.rpc(
+            "get_pending_follow_requests",
+            params: ["p_user_id": userId.uuidString]
+        ).execute()
+
+        let results = try JSONDecoder().decode([FollowRequestResponse].self, from: response.data)
+        return results.map { result in
+            FollowRequestWithUser(
+                id: result.requestId,
+                userId: result.requesterId,
+                username: result.requesterUsername,
+                profilePictureUrl: result.requesterProfilePictureUrl,
+                createdAt: result.createdAt
+            )
+        }
+    }
+
+    /// Get sent follow requests (requests sent by user)
+    func getSentFollowRequests(userId: UUID) async throws -> [FollowRequestWithUser] {
+        let response = try await client.rpc(
+            "get_sent_follow_requests",
+            params: ["p_user_id": userId.uuidString]
+        ).execute()
+
+        let results = try JSONDecoder().decode([SentFollowRequestResponse].self, from: response.data)
+        return results.map { result in
+            FollowRequestWithUser(
+                id: result.requestId,
+                userId: result.requestedId,
+                username: result.requestedUsername,
+                profilePictureUrl: result.requestedProfilePictureUrl,
+                createdAt: result.createdAt
+            )
+        }
+    }
+
+    /// Check if there's a pending follow request
+    func hasPendingFollowRequest(requesterId: UUID, requestedId: UUID) async throws -> Bool {
+        let response = try await client.rpc(
+            "has_pending_follow_request",
+            params: [
+                "p_requester_id": requesterId.uuidString,
+                "p_requested_id": requestedId.uuidString
+            ]
+        ).execute()
+
+        let result = try JSONDecoder().decode(Bool.self, from: response.data)
+        return result
+    }
+
+    /// Update user privacy setting
+    func updateUserPrivacy(userId: UUID, isPrivate: Bool) async throws {
+        try await client
+            .from("users")
+            .update(["is_private": isPrivate])
+            .eq("id", value: userId.uuidString)
+            .execute()
+    }
+
     // MARK: - Like Methods
 
     /// Toggle like on an activity

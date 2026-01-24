@@ -123,6 +123,31 @@ struct SettingsView: View {
                         .cornerRadius(12)
                     }
 
+                    // Privacy Settings Section
+                    VStack(spacing: 16) {
+                        Text("Privacy")
+                            .font(.headline)
+                            .foregroundColor(colors.primaryText)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        VStack(spacing: 12) {
+                            Toggle(isOn: $viewModel.isPrivate) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Private Account")
+                                        .foregroundColor(colors.primaryText)
+                                        .fontWeight(.medium)
+                                    Text("When enabled, new followers must send a request that you can approve or reject")
+                                        .font(.caption)
+                                        .foregroundColor(colors.secondaryText)
+                                }
+                            }
+                            .tint(colors.accent)
+                        }
+                        .padding()
+                        .background(colors.cardBackground)
+                        .cornerRadius(12)
+                    }
+
                     // Export Activities Section
                     VStack(spacing: 16) {
                         Text("Export Activities")

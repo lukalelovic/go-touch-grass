@@ -21,6 +21,14 @@ class SettingsViewModel: ObservableObject {
     @Published var selectedPhoto: PhotosPickerItem?
     @Published var isUploadingPhoto = false
 
+    @Published var isPrivate: Bool = false {
+        didSet {
+            if oldValue != isPrivate {
+                updatePrivacySetting()
+            }
+        }
+    }
+
     @Published var showSuccessAlert = false
     @Published var showErrorAlert = false
     @Published var successMessage: String?
@@ -50,7 +58,8 @@ class SettingsViewModel: ObservableObject {
                 let user = try await supabaseManager.fetchUser(userId: authUser.id)
                 newUsername = user.username
                 profilePictureUrl = user.profilePictureUrl
-                print("🔵 Loaded user data - profilePictureUrl: \(user.profilePictureUrl ?? "nil")")
+                isPrivate = user.isPrivate
+                print("🔵 Loaded user data - profilePictureUrl: \(user.profilePictureUrl ?? "nil"), isPrivate: \(user.isPrivate)")
             } catch {
                 print("Error loading user data: \(error)")
             }
@@ -181,6 +190,26 @@ class SettingsViewModel: ObservableObject {
             } catch {
                 errorMessage = "Failed to remove profile picture: \(error.localizedDescription)"
                 showErrorAlert = true
+            }
+        }
+    }
+
+    // MARK: - Privacy Settings
+
+    private func updatePrivacySetting() {
+        guard let userId = currentUserId else { return }
+
+        Task {
+            do {
+                try await supabaseManager.updateUserPrivacy(userId: userId, isPrivate: isPrivate)
+                print("✅ Privacy setting updated: \(isPrivate)")
+            } catch {
+                errorMessage = "Failed to update privacy setting: \(error.localizedDescription)"
+                showErrorAlert = true
+                // Revert the toggle on error
+                await MainActor.run {
+                    isPrivate = !isPrivate
+                }
             }
         }
     }

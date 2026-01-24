@@ -13,6 +13,7 @@ struct User: Identifiable, Codable {
     let username: String
     let email: String?
     let profilePictureUrl: String?
+    let isPrivate: Bool
     let createdAt: Date?
     let updatedAt: Date?
 
@@ -21,8 +22,21 @@ struct User: Identifiable, Codable {
         case username
         case email
         case profilePictureUrl = "profile_picture_url"
+        case isPrivate = "is_private"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        username = try container.decode(String.self, forKey: .username)
+        email = try container.decodeIfPresent(String.self, forKey: .email)
+        profilePictureUrl = try container.decodeIfPresent(String.self, forKey: .profilePictureUrl)
+        // Default to false if is_private doesn't exist in database (for existing users)
+        isPrivate = try container.decodeIfPresent(Bool.self, forKey: .isPrivate) ?? false
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
     }
 
     init(
@@ -30,6 +44,7 @@ struct User: Identifiable, Codable {
         username: String,
         email: String? = nil,
         profilePictureUrl: String? = nil,
+        isPrivate: Bool = false,
         createdAt: Date? = nil,
         updatedAt: Date? = nil
     ) {
@@ -37,6 +52,7 @@ struct User: Identifiable, Codable {
         self.username = username
         self.email = email
         self.profilePictureUrl = profilePictureUrl
+        self.isPrivate = isPrivate
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }

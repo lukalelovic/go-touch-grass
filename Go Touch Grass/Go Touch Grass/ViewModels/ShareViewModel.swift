@@ -83,10 +83,10 @@ class ShareViewModel: ObservableObject {
         do {
             let userId = authUser.id
 
-            // Check daily limit (3 activities per day)
+            // Check daily limit (1 activity per day)
             let todayCount = try await supabaseManager.getTodayActivityCount(userId: userId)
-            if todayCount >= 3 {
-                errorMessage = "Daily limit reached! You can only log 3 activities per day."
+            if todayCount >= 1 {
+                errorMessage = "Daily limit reached! You can only log 1 activity per day."
                 isSaving = false
                 return
             }

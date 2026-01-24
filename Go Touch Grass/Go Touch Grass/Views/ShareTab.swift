@@ -154,7 +154,7 @@ struct ShareTab: View {
                         .padding(.top, 10)
 
                         // Info Text
-                        Text("Remember: You can only log 3 activities per day!")
+                        Text("Remember: You can only log 1 activity per day!")
                             .font(.caption)
                             .foregroundColor(colors.secondaryText)
                             .multilineTextAlignment(.center)

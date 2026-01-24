@@ -12,6 +12,7 @@ struct UserProfileView: View {
     let user: User
     let isCurrentUser: Bool
     @State private var isFollowing: Bool = false
+    @State private var hasPendingRequest: Bool = false
     @State private var followerCount: Int = 0
     @State private var followingCount: Int = 0
     @State private var activities: [Activity] = []
@@ -76,14 +77,22 @@ struct UserProfileView: View {
                                 toggleFollow()
                             }) {
                                 HStack {
-                                    Image(systemName: isFollowing ? "person.fill.checkmark" : "person.badge.plus")
-                                    Text(isFollowing ? "Following" : "Follow")
+                                    if hasPendingRequest {
+                                        Image(systemName: "clock")
+                                        Text("Requested")
+                                    } else if isFollowing {
+                                        Image(systemName: "person.fill.checkmark")
+                                        Text("Following")
+                                    } else {
+                                        Image(systemName: "person.badge.plus")
+                                        Text("Follow")
+                                    }
                                 }
                                 .font(.headline)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
-                                .background(isFollowing ? Color.gray : colors.accentDark)
+                                .background(isFollowing || hasPendingRequest ? Color.gray : colors.accentDark)
                                 .cornerRadius(12)
                             }
                             .disabled(isLoading)
@@ -100,7 +109,26 @@ struct UserProfileView: View {
                             .font(.headline)
                             .foregroundColor(colors.primaryText)
 
-                        if activities.isEmpty {
+                        // Check if profile is private and user is not following
+                        if user.isPrivate && !isFollowing && !isCurrentUser {
+                            VStack(spacing: 12) {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 48))
+                                    .foregroundColor(colors.secondaryText)
+                                    .padding(.top, 20)
+
+                                Text("This user has a private profile")
+                                    .font(.headline)
+                                    .foregroundColor(colors.primaryText)
+
+                                Text("Follow to see their activities")
+                                    .font(.subheadline)
+                                    .foregroundColor(colors.secondaryText)
+                                    .padding(.bottom, 20)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                        } else if activities.isEmpty {
                             Text("No activities yet")
                                 .font(.subheadline)
                                 .foregroundColor(colors.secondaryText)
@@ -174,10 +202,6 @@ struct UserProfileView: View {
                 self.followerCount = followerCount
                 self.followingCount = followingCount
 
-                // Load user activities
-                let activities = try await supabaseManager.fetchUserActivities(userId: user.id, limit: 50)
-                self.activities = activities
-
                 // Check if current user is following this user
                 if !isCurrentUser, let authUser = supabaseManager.currentUser {
                     let isFollowing = try await supabaseManager.isFollowing(
@@ -185,6 +209,26 @@ struct UserProfileView: View {
                         followingId: user.id
                     )
                     self.isFollowing = isFollowing
+
+                    // Check if there's a pending follow request
+                    let hasPending = try await supabaseManager.hasPendingFollowRequest(
+                        requesterId: authUser.id,
+                        requestedId: user.id
+                    )
+                    self.hasPendingRequest = hasPending
+                }
+
+                // Only load activities if:
+                // 1. This is the current user's profile, OR
+                // 2. The profile is public, OR
+                // 3. The profile is private AND the current user is following
+                let canViewActivities = isCurrentUser || !user.isPrivate || isFollowing
+
+                if canViewActivities {
+                    let activities = try await supabaseManager.fetchUserActivities(userId: user.id, limit: 50)
+                    self.activities = activities
+                } else {
+                    self.activities = []
                 }
 
                 isLoading = false
@@ -210,15 +254,48 @@ struct UserProfileView: View {
             do {
                 isLoading = true
 
-                // Toggle follow status
-                let nowFollowing = try await supabaseManager.toggleFollow(
-                    followerId: authUser.id,
-                    followingId: user.id
-                )
+                if isFollowing {
+                    // Unfollow - use toggle (which removes the follow)
+                    let nowFollowing = try await supabaseManager.toggleFollow(
+                        followerId: authUser.id,
+                        followingId: user.id
+                    )
+                    isFollowing = nowFollowing
+                    followerCount -= 1
 
-                // Update state
-                isFollowing = nowFollowing
-                followerCount += nowFollowing ? 1 : -1
+                    // Clear activities if profile is private
+                    if user.isPrivate {
+                        activities = []
+                    }
+                } else if hasPendingRequest {
+                    // Cancel pending request
+                    _ = try await supabaseManager.cancelFollowRequest(
+                        requesterId: authUser.id,
+                        requestedId: user.id
+                    )
+                    hasPendingRequest = false
+                } else {
+                    // Send follow request (or directly follow if public)
+                    let result = try await supabaseManager.sendFollowRequest(
+                        requesterId: authUser.id,
+                        requestedId: user.id
+                    )
+
+                    if result.isDirectFollow {
+                        // Public account - followed directly
+                        isFollowing = true
+                        followerCount += 1
+
+                        // Load activities now that we're following
+                        let fetchedActivities = try await supabaseManager.fetchUserActivities(userId: user.id, limit: 50)
+                        activities = fetchedActivities
+                    } else {
+                        // Private account - request sent
+                        hasPendingRequest = true
+                    }
+
+                    print("✅ \(result.message)")
+                }
 
                 isLoading = false
             } catch {

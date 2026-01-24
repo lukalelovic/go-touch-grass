@@ -41,6 +41,9 @@ CREATE TABLE users (
     -- Example: avatars/550e8400-e29b-41d4-a716-446655440000/profile.jpg
     profile_picture_url TEXT,
 
+    -- Privacy settings
+    is_private BOOLEAN DEFAULT false,
+
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
@@ -76,6 +79,33 @@ CREATE TABLE user_follows (
 CREATE INDEX idx_user_follows_follower_id ON user_follows(follower_id);
 CREATE INDEX idx_user_follows_following_id ON user_follows(following_id);
 CREATE INDEX idx_user_follows_created_at ON user_follows(created_at DESC);
+
+-- ============================================================================
+-- FOLLOW REQUESTS TABLE (For Private Accounts)
+-- ============================================================================
+-- This table tracks pending follow requests for private accounts
+-- When a user tries to follow a private account, a request is created here
+-- The request can be accepted (creates user_follows entry) or rejected (deleted)
+CREATE TABLE follow_requests (
+    id SERIAL PRIMARY KEY,
+    requester_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    requested_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    -- Prevent self-following requests
+    CONSTRAINT no_self_follow_request CHECK (requester_id != requested_id),
+
+    -- Ensure one request per pair
+    CONSTRAINT unique_follow_request UNIQUE(requester_id, requested_id)
+);
+
+-- Indexes for efficient request queries
+CREATE INDEX idx_follow_requests_requester_id ON follow_requests(requester_id);
+CREATE INDEX idx_follow_requests_requested_id ON follow_requests(requested_id);
+CREATE INDEX idx_follow_requests_status ON follow_requests(status);
+CREATE INDEX idx_follow_requests_created_at ON follow_requests(created_at DESC);
 
 -- ============================================================================
 -- ACTIVITY TYPES TABLE
@@ -237,6 +267,8 @@ DROP FUNCTION IF EXISTS get_follower_count(UUID);
 DROP FUNCTION IF EXISTS get_following_count(UUID);
 
 -- Function to toggle follow (follow if not following, unfollow if following)
+-- NOTE: This function is deprecated for private accounts. Use send_follow_request instead.
+-- This function will only work for public accounts or if you're already following.
 CREATE OR REPLACE FUNCTION toggle_user_follow(
     p_follower_id UUID,
     p_following_id UUID
@@ -244,6 +276,7 @@ CREATE OR REPLACE FUNCTION toggle_user_follow(
 RETURNS BOOLEAN AS $$
 DECLARE
     v_exists BOOLEAN;
+    v_is_private BOOLEAN;
 BEGIN
     -- Prevent self-follow
     IF p_follower_id = p_following_id THEN
@@ -260,12 +293,26 @@ BEGIN
         -- Unfollow: Remove the follow
         DELETE FROM user_follows
         WHERE follower_id = p_follower_id AND following_id = p_following_id;
+
+        -- Also remove any accepted follow requests
+        DELETE FROM follow_requests
+        WHERE requester_id = p_follower_id AND requested_id = p_following_id;
+
         RETURN FALSE; -- Indicates unfollowed
     ELSE
-        -- Follow: Add the follow
-        INSERT INTO user_follows (follower_id, following_id)
-        VALUES (p_follower_id, p_following_id);
-        RETURN TRUE; -- Indicates followed
+        -- Check if the target account is private
+        SELECT is_private INTO v_is_private
+        FROM users
+        WHERE id = p_following_id;
+
+        IF v_is_private THEN
+            RAISE EXCEPTION 'Cannot follow private account directly. Use send_follow_request instead.';
+        ELSE
+            -- Follow: Add the follow
+            INSERT INTO user_follows (follower_id, following_id)
+            VALUES (p_follower_id, p_following_id);
+            RETURN TRUE; -- Indicates followed
+        END IF;
     END IF;
 END;
 $$ LANGUAGE plpgsql;
@@ -305,6 +352,204 @@ BEGIN
         FROM user_follows
         WHERE follower_id = p_user_id
     )::INTEGER;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================================
+-- FOLLOW REQUEST FUNCTIONS
+-- ============================================================================
+
+-- Drop existing functions first
+DROP FUNCTION IF EXISTS send_follow_request(UUID, UUID);
+DROP FUNCTION IF EXISTS accept_follow_request(UUID, UUID);
+DROP FUNCTION IF EXISTS reject_follow_request(UUID, UUID);
+DROP FUNCTION IF EXISTS cancel_follow_request(UUID, UUID);
+DROP FUNCTION IF EXISTS get_pending_follow_requests(UUID);
+DROP FUNCTION IF EXISTS get_sent_follow_requests(UUID);
+DROP FUNCTION IF EXISTS has_pending_follow_request(UUID, UUID);
+
+-- Function to send a follow request (or directly follow if account is public)
+CREATE OR REPLACE FUNCTION send_follow_request(
+    p_requester_id UUID,
+    p_requested_id UUID
+)
+RETURNS TABLE(success BOOLEAN, is_direct_follow BOOLEAN, message TEXT) AS $$
+DECLARE
+    v_is_private BOOLEAN;
+    v_already_following BOOLEAN;
+    v_pending_request BOOLEAN;
+BEGIN
+    -- Prevent self-follow
+    IF p_requester_id = p_requested_id THEN
+        RETURN QUERY SELECT false, false, 'Cannot follow yourself'::TEXT;
+        RETURN;
+    END IF;
+
+    -- Check if already following
+    SELECT EXISTS(
+        SELECT 1 FROM user_follows
+        WHERE follower_id = p_requester_id AND following_id = p_requested_id
+    ) INTO v_already_following;
+
+    IF v_already_following THEN
+        RETURN QUERY SELECT false, false, 'Already following this user'::TEXT;
+        RETURN;
+    END IF;
+
+    -- Check if there's already a pending request
+    SELECT EXISTS(
+        SELECT 1 FROM follow_requests
+        WHERE requester_id = p_requester_id AND requested_id = p_requested_id AND status = 'pending'
+    ) INTO v_pending_request;
+
+    IF v_pending_request THEN
+        RETURN QUERY SELECT false, false, 'Follow request already sent'::TEXT;
+        RETURN;
+    END IF;
+
+    -- Check if the target account is private
+    SELECT is_private INTO v_is_private
+    FROM users
+    WHERE id = p_requested_id;
+
+    IF v_is_private THEN
+        -- Create a follow request
+        INSERT INTO follow_requests (requester_id, requested_id, status)
+        VALUES (p_requester_id, p_requested_id, 'pending')
+        ON CONFLICT (requester_id, requested_id) DO UPDATE SET status = 'pending', updated_at = CURRENT_TIMESTAMP;
+
+        RETURN QUERY SELECT true, false, 'Follow request sent'::TEXT;
+    ELSE
+        -- Directly create the follow relationship
+        INSERT INTO user_follows (follower_id, following_id)
+        VALUES (p_requester_id, p_requested_id);
+
+        RETURN QUERY SELECT true, true, 'Now following'::TEXT;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to accept a follow request
+CREATE OR REPLACE FUNCTION accept_follow_request(
+    p_requester_id UUID,
+    p_requested_id UUID
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_request_exists BOOLEAN;
+BEGIN
+    -- Check if there's a pending request
+    SELECT EXISTS(
+        SELECT 1 FROM follow_requests
+        WHERE requester_id = p_requester_id AND requested_id = p_requested_id AND status = 'pending'
+    ) INTO v_request_exists;
+
+    IF NOT v_request_exists THEN
+        RAISE EXCEPTION 'No pending follow request found';
+    END IF;
+
+    -- Create the follow relationship
+    INSERT INTO user_follows (follower_id, following_id)
+    VALUES (p_requester_id, p_requested_id)
+    ON CONFLICT DO NOTHING;
+
+    -- Update the request status to accepted
+    UPDATE follow_requests
+    SET status = 'accepted', updated_at = CURRENT_TIMESTAMP
+    WHERE requester_id = p_requester_id AND requested_id = p_requested_id;
+
+    RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to reject a follow request
+CREATE OR REPLACE FUNCTION reject_follow_request(
+    p_requester_id UUID,
+    p_requested_id UUID
+)
+RETURNS BOOLEAN AS $$
+BEGIN
+    -- Update the request status to rejected (or delete it)
+    DELETE FROM follow_requests
+    WHERE requester_id = p_requester_id AND requested_id = p_requested_id AND status = 'pending';
+
+    RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to cancel a follow request (by the requester)
+CREATE OR REPLACE FUNCTION cancel_follow_request(
+    p_requester_id UUID,
+    p_requested_id UUID
+)
+RETURNS BOOLEAN AS $$
+BEGIN
+    DELETE FROM follow_requests
+    WHERE requester_id = p_requester_id AND requested_id = p_requested_id AND status = 'pending';
+
+    RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get pending follow requests for a user (requests received)
+CREATE OR REPLACE FUNCTION get_pending_follow_requests(p_user_id UUID)
+RETURNS TABLE(
+    request_id INTEGER,
+    requester_id UUID,
+    requester_username VARCHAR,
+    requester_profile_picture_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        fr.id,
+        fr.requester_id,
+        u.username,
+        u.profile_picture_url,
+        fr.created_at
+    FROM follow_requests fr
+    JOIN users u ON fr.requester_id = u.id
+    WHERE fr.requested_id = p_user_id AND fr.status = 'pending'
+    ORDER BY fr.created_at DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get sent follow requests (requests sent by user)
+CREATE OR REPLACE FUNCTION get_sent_follow_requests(p_user_id UUID)
+RETURNS TABLE(
+    request_id INTEGER,
+    requested_id UUID,
+    requested_username VARCHAR,
+    requested_profile_picture_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        fr.id,
+        fr.requested_id,
+        u.username,
+        u.profile_picture_url,
+        fr.created_at
+    FROM follow_requests fr
+    JOIN users u ON fr.requested_id = u.id
+    WHERE fr.requester_id = p_user_id AND fr.status = 'pending'
+    ORDER BY fr.created_at DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to check if there's a pending follow request
+CREATE OR REPLACE FUNCTION has_pending_follow_request(
+    p_requester_id UUID,
+    p_requested_id UUID
+)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS(
+        SELECT 1 FROM follow_requests
+        WHERE requester_id = p_requester_id AND requested_id = p_requested_id AND status = 'pending'
+    );
 END;
 $$ LANGUAGE plpgsql;
 
@@ -1012,6 +1257,7 @@ INSERT INTO user_follows (follower_id, following_id) VALUES
 -- Enable RLS on all tables
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_follows ENABLE ROW LEVEL SECURITY;
+ALTER TABLE follow_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_likes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_types ENABLE ROW LEVEL SECURITY;
@@ -1081,15 +1327,71 @@ USING (follower_id = auth.uid());
 -- No UPDATE policy = follows cannot be modified, only created or deleted
 
 -- ----------------------------------------------------------------------------
+-- FOLLOW_REQUESTS TABLE POLICIES
+-- ----------------------------------------------------------------------------
+
+-- Users can view requests they sent or received
+CREATE POLICY "Users can view their follow requests"
+ON follow_requests
+FOR SELECT
+USING (requester_id = auth.uid() OR requested_id = auth.uid());
+
+-- Users can create follow requests where they are the requester
+CREATE POLICY "Users can send follow requests"
+ON follow_requests
+FOR INSERT
+WITH CHECK (requester_id = auth.uid());
+
+-- Users can update requests they received (to accept/reject)
+CREATE POLICY "Users can update received follow requests"
+ON follow_requests
+FOR UPDATE
+USING (requested_id = auth.uid())
+WITH CHECK (requested_id = auth.uid());
+
+-- Users can delete requests they sent or received
+CREATE POLICY "Users can delete follow requests"
+ON follow_requests
+FOR DELETE
+USING (requester_id = auth.uid() OR requested_id = auth.uid());
+
+-- ----------------------------------------------------------------------------
 -- ACTIVITIES TABLE POLICIES
 -- ----------------------------------------------------------------------------
 
--- Anyone can view activities (for feed and profiles)
--- Note: In production, you might want to restrict this to followed users only
-CREATE POLICY "Anyone can view activities"
+-- Drop the old "Anyone can view activities" policy
+DROP POLICY IF EXISTS "Anyone can view activities" ON activities;
+
+-- Users can view activities based on privacy settings:
+-- 1. Own activities (always visible)
+-- 2. Activities from public accounts (not private)
+-- 3. Activities from private accounts if you're following them
+CREATE POLICY "Users can view activities based on privacy"
 ON activities
 FOR SELECT
-USING (true);
+USING (
+    -- Own activities are always visible
+    user_id = auth.uid()
+    OR
+    -- Activities from public accounts are visible to everyone
+    EXISTS (
+        SELECT 1 FROM users u
+        WHERE u.id = activities.user_id
+        AND (u.is_private = false OR u.is_private IS NULL)
+    )
+    OR
+    -- Activities from private accounts are only visible to followers
+    EXISTS (
+        SELECT 1 FROM users u
+        WHERE u.id = activities.user_id
+        AND u.is_private = true
+        AND EXISTS (
+            SELECT 1 FROM user_follows uf
+            WHERE uf.follower_id = auth.uid()
+            AND uf.following_id = activities.user_id
+        )
+    )
+);
 
 -- Users can only create activities for themselves
 CREATE POLICY "Users can create their own activities"

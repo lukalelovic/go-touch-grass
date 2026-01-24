@@ -19,6 +19,7 @@ class ProfileViewModel: ObservableObject {
     // Follow counts
     @Published var followerCount: Int = 0
     @Published var followingCount: Int = 0
+    @Published var pendingRequestCount: Int = 0
 
     // New badge and level properties
     @Published var userStats: UserStats?
@@ -116,6 +117,14 @@ class ProfileViewModel: ObservableObject {
             let followingCount = try await supabaseManager.getFollowingCount(userId: userId)
             self.followerCount = followerCount
             self.followingCount = followingCount
+
+            // Fetch pending follow requests count (only if private account)
+            if user.isPrivate {
+                let pendingRequests = try await supabaseManager.getPendingFollowRequests(userId: userId)
+                self.pendingRequestCount = pendingRequests.count
+            } else {
+                self.pendingRequestCount = 0
+            }
 
             // Fetch level info
             do {

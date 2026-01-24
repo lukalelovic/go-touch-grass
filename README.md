@@ -117,9 +117,9 @@ Goal: App is fully navigable with fake data
 - [x] Badge levels
 - [x] Dark mode
 - [x] Settings page (change username, upload/change PFP, delete account, export activities)
-- [ ] Public/private access
-- [ ] Require 'Friendship' requests to follow
-- [ ] Proper rate limiting (only 1 activity per day)
+- [x] Public/private access
+- [x] Require 'Friendship' requests to follow
+- [x] Proper rate limiting (only 1 activity per day)
 
 #### Touch Grass Screen
 - [x] Local activities in a user's area (static data for now)

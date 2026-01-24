@@ -323,6 +323,32 @@ struct ProfileTab: View {
 
                         // Settings/Logout Section
                         VStack(spacing: 12) {
+                            // Follow Requests (only show for private accounts)
+                            if viewModel.currentUser?.isPrivate == true {
+                                NavigationLink(destination: FollowRequestsView()) {
+                                    HStack {
+                                        Image(systemName: "person.badge.plus")
+                                        Text("Follow Requests")
+                                        Spacer()
+                                        if viewModel.pendingRequestCount > 0 {
+                                            Text("\(viewModel.pendingRequestCount)")
+                                                .font(.caption)
+                                                .fontWeight(.bold)
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
+                                                .background(Color.red)
+                                                .clipShape(Capsule())
+                                        }
+                                        Image(systemName: "chevron.right")
+                                    }
+                                    .foregroundColor(colors.primaryText)
+                                    .padding()
+                                    .background(colors.cardBackground)
+                                    .cornerRadius(12)
+                                }
+                            }
+
                             // Dark Mode Toggle
                             Button(action: {
                                 themeManager.toggleTheme()
