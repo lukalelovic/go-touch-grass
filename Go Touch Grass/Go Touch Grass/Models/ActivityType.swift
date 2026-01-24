@@ -51,21 +51,7 @@ extension ActivityType {
 
     // Fallback icons for backward compatibility
     static func fallbackIcon(for name: String) -> String {
-        switch name.lowercased() {
-        case "hiking": return "figure.hiking"
-        case "running": return "figure.run"
-        case "cycling": return "bicycle"
-        case "swimming": return "figure.pool.swim"
-        case "climbing": return "figure.climbing"
-        case "kayaking": return "figure.kayaking"
-        case "camping": return "tent.fill"
-        case "skiing": return "snowflake"
-        case "surfing": return "water.waves"
-        case "walking": return "figure.walk"
-        case "coffee": return "cup.and.saucer.fill"
-        case "other": return "figure.outdoor.cycle"
-        default: return "leaf.fill"
-        }
+        return "figure.hiking"
     }
 }
 

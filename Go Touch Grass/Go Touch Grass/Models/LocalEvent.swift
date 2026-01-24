@@ -111,7 +111,7 @@ extension LocalEvent {
         LocalEvent(
             title: "Sunrise Kayaking Tour",
             description: "Paddle through calm waters as the sun rises. Perfect for photography enthusiasts!",
-            eventType: ActivityType(id: 6, name: "Kayaking", icon: "figure.kayaking"),
+            eventType: ActivityType(id: 6, name: "Kayaking", icon: "oar.2.crossed"),
             location: Location(latitude: 33.68, longitude: -118.01, name: "Newport Back Bay"),
             date: Date().addingTimeInterval(691200), // 8 days from now
             organizerName: "Paddle Paradise",

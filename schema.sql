@@ -94,7 +94,7 @@ INSERT INTO activity_types (name, icon) VALUES
     ('Cycling', 'bicycle'),
     ('Swimming', 'figure.pool.swim'),
     ('Climbing', 'figure.climbing'),
-    ('Kayaking', 'figure.kayaking'),
+    ('Kayaking', 'oar.2.crossed'),
     ('Camping', 'tent.fill'),
     ('Skiing', 'snowflake'),
     ('Surfing', 'water.waves'),
