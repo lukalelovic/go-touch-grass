@@ -1589,3 +1589,334 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Only service role can modify level milestones (admin only)
 -- No INSERT, UPDATE, or DELETE policies = only service role can modify
+
+-- ============================================================================
+-- TICKETMASTER EVENTS INTEGRATION
+-- ============================================================================
+-- Added: 2026-01-25
+-- Description: Tables for caching Ticketmaster events and tracking user event attendance
+
+-- ============================================================================
+-- TICKETMASTER_EVENTS TABLE (Cached Events)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS ticketmaster_events (
+    id VARCHAR(255) PRIMARY KEY, -- Ticketmaster event ID
+    name VARCHAR(500) NOT NULL,
+    description TEXT,
+    event_url TEXT,
+
+    -- Date/Time information
+    start_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_date TIMESTAMP WITH TIME ZONE,
+    timezone VARCHAR(100),
+
+    -- Location information
+    venue_name VARCHAR(255),
+    venue_address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(100),
+    country VARCHAR(100),
+    postal_code VARCHAR(20),
+    latitude DECIMAL(10, 8),
+    longitude DECIMAL(11, 8),
+
+    -- Event details
+    category VARCHAR(100), -- Music, Sports, Arts, Family, etc.
+    genre VARCHAR(100),
+    price_min DECIMAL(10, 2),
+    price_max DECIMAL(10, 2),
+    currency VARCHAR(10) DEFAULT 'USD',
+
+    -- Images
+    image_url TEXT,
+    thumbnail_url TEXT,
+
+    -- Metadata for caching
+    retrieved_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    search_location_lat DECIMAL(10, 8),
+    search_location_long DECIMAL(11, 8),
+    search_radius_miles INTEGER,
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    -- Constraints
+    CONSTRAINT valid_event_coordinates CHECK (
+        (latitude IS NULL AND longitude IS NULL) OR
+        (latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180)
+    ),
+    CONSTRAINT valid_search_coordinates CHECK (
+        (search_location_lat IS NULL AND search_location_long IS NULL) OR
+        (search_location_lat BETWEEN -90 AND 90 AND search_location_long BETWEEN -180 AND 180)
+    )
+);
+
+-- Indexes for common queries
+CREATE INDEX IF NOT EXISTS idx_ticketmaster_events_start_date ON ticketmaster_events(start_date);
+CREATE INDEX IF NOT EXISTS idx_ticketmaster_events_location ON ticketmaster_events(latitude, longitude) WHERE latitude IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_ticketmaster_events_search_location ON ticketmaster_events(search_location_lat, search_location_long) WHERE search_location_lat IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_ticketmaster_events_retrieved_at ON ticketmaster_events(retrieved_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ticketmaster_events_category ON ticketmaster_events(category);
+CREATE INDEX IF NOT EXISTS idx_ticketmaster_events_city ON ticketmaster_events(city);
+
+-- ============================================================================
+-- USER_EVENT_API_CALLS TABLE (Rate Limiting)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS user_event_api_calls (
+    id SERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+    -- Location of the search
+    search_latitude DECIMAL(10, 8),
+    search_longitude DECIMAL(11, 8),
+    search_location_name VARCHAR(255),
+    search_radius_miles INTEGER DEFAULT 50,
+
+    -- API call metadata
+    called_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    events_retrieved INTEGER DEFAULT 0,
+    success BOOLEAN DEFAULT true,
+    error_message TEXT,
+
+    CONSTRAINT valid_search_coords CHECK (
+        (search_latitude IS NULL AND search_longitude IS NULL) OR
+        (search_latitude BETWEEN -90 AND 90 AND search_longitude BETWEEN -180 AND 180)
+    )
+);
+
+-- Indexes for rate limiting queries
+CREATE INDEX IF NOT EXISTS idx_user_event_api_calls_user_id ON user_event_api_calls(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_event_api_calls_called_at ON user_event_api_calls(called_at DESC);
+
+-- ============================================================================
+-- USER_EVENT_ATTENDANCE TABLE (Track Attended Events)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS user_event_attendance (
+    id SERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    event_id VARCHAR(255) NOT NULL REFERENCES ticketmaster_events(id) ON DELETE CASCADE,
+
+    -- Attendance details
+    attended_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    notes TEXT,
+    rating INTEGER CHECK (rating BETWEEN 1 AND 5),
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    -- Ensure user can only mark attendance once per event
+    CONSTRAINT unique_user_event_attendance UNIQUE(user_id, event_id)
+);
+
+-- Indexes for attendance queries
+CREATE INDEX IF NOT EXISTS idx_user_event_attendance_user_id ON user_event_attendance(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_event_attendance_event_id ON user_event_attendance(event_id);
+CREATE INDEX IF NOT EXISTS idx_user_event_attendance_attended_at ON user_event_attendance(attended_at DESC);
+
+-- ============================================================================
+-- TICKETMASTER EVENT FUNCTIONS
+-- ============================================================================
+
+-- Drop existing functions first
+DROP FUNCTION IF EXISTS can_user_call_event_api(UUID);
+DROP FUNCTION IF EXISTS record_event_api_call(UUID, DECIMAL, DECIMAL, VARCHAR, INTEGER, INTEGER, BOOLEAN, TEXT);
+DROP FUNCTION IF EXISTS get_user_attended_event_count(UUID);
+DROP FUNCTION IF EXISTS has_user_attended_event(UUID, VARCHAR);
+DROP FUNCTION IF EXISTS mark_event_attended(UUID, VARCHAR, TEXT, INTEGER);
+
+-- Function to check if user can make API call (once per day limit)
+CREATE OR REPLACE FUNCTION can_user_call_event_api(p_user_id UUID)
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_last_call TIMESTAMP WITH TIME ZONE;
+BEGIN
+    -- Get the most recent API call for this user
+    SELECT called_at INTO v_last_call
+    FROM user_event_api_calls
+    WHERE user_id = p_user_id
+    ORDER BY called_at DESC
+    LIMIT 1;
+
+    -- If no previous call, allow
+    IF v_last_call IS NULL THEN
+        RETURN TRUE;
+    END IF;
+
+    -- Check if last call was more than 24 hours ago
+    IF v_last_call < (CURRENT_TIMESTAMP - INTERVAL '24 hours') THEN
+        RETURN TRUE;
+    ELSE
+        RETURN FALSE;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to record API call
+CREATE OR REPLACE FUNCTION record_event_api_call(
+    p_user_id UUID,
+    p_search_lat DECIMAL,
+    p_search_long DECIMAL,
+    p_search_location_name VARCHAR,
+    p_search_radius INTEGER,
+    p_events_retrieved INTEGER,
+    p_success BOOLEAN DEFAULT true,
+    p_error_message TEXT DEFAULT NULL
+)
+RETURNS INTEGER AS $$
+DECLARE
+    v_call_id INTEGER;
+BEGIN
+    INSERT INTO user_event_api_calls (
+        user_id,
+        search_latitude,
+        search_longitude,
+        search_location_name,
+        search_radius_miles,
+        events_retrieved,
+        success,
+        error_message
+    ) VALUES (
+        p_user_id,
+        p_search_lat,
+        p_search_long,
+        p_search_location_name,
+        p_search_radius,
+        p_events_retrieved,
+        p_success,
+        p_error_message
+    )
+    RETURNING id INTO v_call_id;
+
+    RETURN v_call_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get user's attended event count
+CREATE OR REPLACE FUNCTION get_user_attended_event_count(p_user_id UUID)
+RETURNS INTEGER AS $$
+BEGIN
+    RETURN (
+        SELECT COUNT(*)
+        FROM user_event_attendance
+        WHERE user_id = p_user_id
+    )::INTEGER;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to check if user attended an event
+CREATE OR REPLACE FUNCTION has_user_attended_event(
+    p_user_id UUID,
+    p_event_id VARCHAR
+)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS(
+        SELECT 1 FROM user_event_attendance
+        WHERE user_id = p_user_id AND event_id = p_event_id
+    );
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to mark event as attended
+CREATE OR REPLACE FUNCTION mark_event_attended(
+    p_user_id UUID,
+    p_event_id VARCHAR,
+    p_notes TEXT DEFAULT NULL,
+    p_rating INTEGER DEFAULT NULL
+)
+RETURNS BOOLEAN AS $$
+BEGIN
+    INSERT INTO user_event_attendance (user_id, event_id, notes, rating)
+    VALUES (p_user_id, p_event_id, p_notes, p_rating)
+    ON CONFLICT (user_id, event_id) DO UPDATE
+    SET notes = EXCLUDED.notes,
+        rating = EXCLUDED.rating;
+
+    RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================================
+-- TICKETMASTER EVENTS RLS POLICIES
+-- ============================================================================
+
+-- Enable RLS on all tables
+ALTER TABLE ticketmaster_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_event_api_calls ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_event_attendance ENABLE ROW LEVEL SECURITY;
+
+-- Ticketmaster Events Policies
+-- Anyone can view cached events
+CREATE POLICY "Anyone can view ticketmaster events"
+ON ticketmaster_events
+FOR SELECT
+USING (true);
+
+-- Only service can insert/update events (managed by backend)
+-- No INSERT/UPDATE/DELETE policies = only service role can modify
+
+-- User Event API Calls Policies
+-- Users can only view their own API call history
+CREATE POLICY "Users can view their own API calls"
+ON user_event_api_calls
+FOR SELECT
+USING (user_id = auth.uid());
+
+-- Users can insert their own API call records
+CREATE POLICY "Users can record their own API calls"
+ON user_event_api_calls
+FOR INSERT
+WITH CHECK (user_id = auth.uid());
+
+-- User Event Attendance Policies
+-- Anyone can view event attendance (for displaying counts)
+CREATE POLICY "Anyone can view event attendance"
+ON user_event_attendance
+FOR SELECT
+USING (true);
+
+-- Users can only mark their own attendance
+CREATE POLICY "Users can mark their own attendance"
+ON user_event_attendance
+FOR INSERT
+WITH CHECK (user_id = auth.uid());
+
+-- Users can update their own attendance records
+CREATE POLICY "Users can update their own attendance"
+ON user_event_attendance
+FOR UPDATE
+USING (user_id = auth.uid())
+WITH CHECK (user_id = auth.uid());
+
+-- Users can delete their own attendance records
+CREATE POLICY "Users can delete their own attendance"
+ON user_event_attendance
+FOR DELETE
+USING (user_id = auth.uid());
+
+-- ============================================================================
+-- TICKETMASTER EVENTS VIEWS
+-- ============================================================================
+
+-- View to get user event statistics
+CREATE OR REPLACE VIEW user_event_stats AS
+SELECT
+    u.id AS user_id,
+    u.username,
+    COUNT(DISTINCT uea.event_id) AS events_attended,
+    COUNT(DISTINCT ueac.id) AS total_api_calls,
+    MAX(ueac.called_at) AS last_api_call,
+    can_user_call_event_api(u.id) AS can_call_api_now
+FROM users u
+    LEFT JOIN user_event_attendance uea ON u.id = uea.user_id
+    LEFT JOIN user_event_api_calls ueac ON u.id = ueac.user_id
+GROUP BY u.id, u.username;
+
+-- View to get upcoming events with attendance counts
+CREATE OR REPLACE VIEW upcoming_events_with_stats AS
+SELECT
+    te.*,
+    COUNT(DISTINCT uea.user_id) AS total_attendees
+FROM ticketmaster_events te
+    LEFT JOIN user_event_attendance uea ON te.id = uea.event_id
+WHERE te.start_date >= CURRENT_TIMESTAMP
+GROUP BY te.id
+ORDER BY te.start_date ASC;

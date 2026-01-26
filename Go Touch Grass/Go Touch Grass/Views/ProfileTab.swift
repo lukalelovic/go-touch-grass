@@ -37,8 +37,8 @@ struct ProfileTab: View {
                                     .fontWeight(.bold)
                                     .foregroundColor(colors.primaryText)
 
-                                // Follower/Following counts
-                                HStack(spacing: 24) {
+                                // Follower/Following/Events counts
+                                HStack(spacing: 20) {
                                     VStack(spacing: 4) {
                                         Text("\(viewModel.followerCount)")
                                             .font(.title3)
@@ -55,6 +55,16 @@ struct ProfileTab: View {
                                             .fontWeight(.bold)
                                             .foregroundColor(colors.primaryText)
                                         Text("Following")
+                                            .font(.caption)
+                                            .foregroundColor(colors.secondaryText)
+                                    }
+
+                                    VStack(spacing: 4) {
+                                        Text("\(viewModel.attendedEventsCount)")
+                                            .font(.title3)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(colors.primaryText)
+                                        Text("Events")
                                             .font(.caption)
                                             .foregroundColor(colors.secondaryText)
                                     }

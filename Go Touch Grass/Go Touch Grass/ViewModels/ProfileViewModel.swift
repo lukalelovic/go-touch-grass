@@ -28,11 +28,16 @@ class ProfileViewModel: ObservableObject {
     @Published var unlockedBadges: [BadgeProgress] = []
     @Published var lockedBadges: [BadgeProgress] = []
 
+    // Event attendance tracking
+    @Published var attendedEventsCount: Int = 0
+    @Published var attendedEvents: [TicketmasterEvent] = []
+
     @Published var isLoading = false
     @Published var errorMessage: String?
 
     private let activityStore: ActivityStore
     private var supabaseManager: SupabaseManager
+    private let ticketmasterService = TicketmasterService.shared
     private var cancellables = Set<AnyCancellable>()
 
     init(activityStore: ActivityStore = .shared, supabaseManager: SupabaseManager? = nil) {
@@ -150,6 +155,16 @@ class ProfileViewModel: ObservableObject {
             } catch {
                 print("❌ Error fetching user stats: \(error)")
                 throw error
+            }
+
+            // Fetch attended events count
+            do {
+                let eventsCount = try await ticketmasterService.fetchAttendedEventCount(userId: userId)
+                self.attendedEventsCount = eventsCount
+                print("✅ Fetched attended events count: \(eventsCount)")
+            } catch {
+                print("❌ Error fetching attended events count: \(error)")
+                self.attendedEventsCount = 0
             }
 
             isLoading = false
@@ -279,5 +294,19 @@ class ProfileViewModel: ObservableObject {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter.string(from: date)
+    }
+
+    // MARK: - Event Attendance Methods
+
+    func fetchAttendedEvents() async {
+        guard let userId = currentUser?.id else { return }
+
+        do {
+            attendedEvents = try await ticketmasterService.fetchAttendedEvents(userId: userId)
+            attendedEventsCount = attendedEvents.count
+        } catch {
+            print("Error fetching attended events: \(error)")
+            errorMessage = "Failed to load attended events"
+        }
     }
 }

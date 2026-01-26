@@ -81,17 +81,51 @@ struct TouchGrassTab: View {
                     }
                     .padding()
 
-                    // Events List
-                    if viewModel.filteredEvents.isEmpty {
+                    // Loading indicator
+                    if viewModel.isLoading {
                         VStack(spacing: 16) {
                             Spacer()
-                            Image(systemName: "calendar.badge.exclamationmark")
+                            ProgressView()
+                                .scaleEffect(1.5)
+                            Text("Loading events...")
+                                .font(.caption)
+                                .foregroundColor(colors.secondaryText)
+                            Spacer()
+                        }
+                    }
+                    // Error message
+                    else if let errorMessage = viewModel.errorMessage {
+                        VStack(spacing: 12) {
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.orange)
+                                Text(errorMessage)
+                                    .font(.caption)
+                                    .foregroundColor(colors.secondaryText)
+                                Spacer()
+                                Button("Dismiss") {
+                                    viewModel.errorMessage = nil
+                                }
+                                .font(.caption)
+                                .foregroundColor(colors.accent)
+                            }
+                            .padding()
+                            .background(colors.cardBackground)
+                            .cornerRadius(8)
+                        }
+                        .padding(.horizontal)
+                    }
+                    // Events List
+                    else if viewModel.filteredEvents.isEmpty {
+                        VStack(spacing: 16) {
+                            Spacer()
+                            Image(systemName: viewModel.selectedLocation == nil ? "mappin.slash" : "calendar.badge.exclamationmark")
                                 .font(.system(size: 60))
                                 .foregroundColor(colors.tertiaryText)
-                            Text("No events found")
+                            Text(viewModel.selectedLocation == nil ? "Select a location" : "No events found")
                                 .font(.title3)
                                 .foregroundColor(colors.secondaryText)
-                            Text("Try selecting a different location")
+                            Text(viewModel.selectedLocation == nil ? "Tap the location picker above to find events near you" : "Try selecting a different location")
                                 .font(.caption)
                                 .foregroundColor(colors.secondaryText)
                             Spacer()
@@ -100,13 +134,16 @@ struct TouchGrassTab: View {
                         ScrollView {
                             LazyVStack(spacing: 12) {
                                 ForEach(viewModel.filteredEvents) { event in
-                                    NavigationLink(destination: LocalEventDetailView(event: event, themeManager: themeManager)) {
+                                    NavigationLink(destination: LocalEventDetailView(event: event, viewModel: viewModel, themeManager: themeManager)) {
                                         LocalEventRowView(event: event)
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                 }
                             }
                             .padding()
+                        }
+                        .refreshable {
+                            await viewModel.refreshEvents()
                         }
                     }
                 }
@@ -118,8 +155,15 @@ struct TouchGrassTab: View {
             .sheet(isPresented: $viewModel.showLocationPicker) {
                 LocationPickerView(selectedLocation: $viewModel.selectedLocation)
             }
+            .alert("Daily Limit Reached", isPresented: $viewModel.showRateLimitAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("You can only search for events once per day to conserve API usage.\n\nIf you've already searched a location today, those events are cached and available. For new locations, please try again tomorrow!")
+            }
             .onChange(of: viewModel.selectedLocation) { oldValue, newValue in
-                viewModel.filterEventsByLocation()
+                Task {
+                    await viewModel.loadEvents()
+                }
             }
         }
     }
@@ -229,7 +273,9 @@ struct LocalEventRowView: View {
 // MARK: - Local Event Detail View
 struct LocalEventDetailView: View {
     let event: LocalEvent
+    @ObservedObject var viewModel: EventViewModel
     @ObservedObject var themeManager: ThemeManager
+    @State private var showAttendanceConfirmation = false
 
     var body: some View {
         let colors = AppColors(isDarkMode: themeManager.isDarkMode)
@@ -359,16 +405,16 @@ struct LocalEventDetailView: View {
                         .background(colors.cardBackground)
                         .cornerRadius(12)
 
-                        // Join Button
+                        // Mark as Attended Button
                         Button(action: {
-                            // TODO: Implement join event functionality
-                            // - Call API to register user for event
-                            // - Update attendee count
-                            // - Add event to user's calendar
+                            Task {
+                                await viewModel.joinEvent(event)
+                                showAttendanceConfirmation = true
+                            }
                         }) {
                             HStack {
                                 Image(systemName: "checkmark.circle.fill")
-                                Text("Join Event")
+                                Text("Mark as Attended")
                             }
                             .font(.headline)
                             .foregroundColor(.white)
@@ -376,6 +422,11 @@ struct LocalEventDetailView: View {
                             .padding()
                             .background(colors.accent)
                             .cornerRadius(12)
+                        }
+                        .alert("Event Marked as Attended", isPresented: $showAttendanceConfirmation) {
+                            Button("OK", role: .cancel) { }
+                        } message: {
+                            Text("This event has been added to your attended events list!")
                         }
                     }
                     .padding()

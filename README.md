@@ -43,6 +43,17 @@ Follow your friends to see what they are up to outside, and track your own activ
    - **Secure password change:** Toggle ON (recommended)
 7. Click **Save**
 
+### Register for Ticketmaster Discovery API
+1. Go to https://developer.ticketmaster.com/
+2. Click "Get Your Free API Key" or "Sign Up"
+3. Create an account with your email
+4. Once logged in, navigate to "My Apps" or "Get API Key"
+5. Create a new app and you'll receive:
+    - API Key (Consumer Key)
+    - API Secret (optional, not needed for Discovery API)
+6. Copy-paste the consumer key into the api-key variable in TicketmasterConfig.swift.template and rename this file to TicketmasterConfig.swift
+The free tier gives you 5,000 API calls per day with a rate limit of 5 requests per second.
+
 ## Tech Stack
 | Layer         | Choice                              |
 | ------------- | ----------------------------------- |
@@ -175,20 +186,20 @@ Goal: Replace fake data with real persistence
 
 #### Touch Grass API connectivity
 - [x] Find public APIs/databases (ideally free or low-cost) to connect to for local outdoor events
-- [ ] Register for Ticketmaster Discovery API and obtain API key (5,000 calls/day free tier)
-- [ ] Create Ticketmaster API config file (similar to SupabaseConfig.swift pattern)
-- [ ] Create TicketmasterService to handle API connection and requests
-- [ ] Implement event search by location (lat/long or postal code)
+- [x] Register for Ticketmaster Discovery API and obtain API key (5,000 calls/day free tier)
+- [x] Create Ticketmaster API config file (similar to SupabaseConfig.swift pattern)
+- [x] Create TicketmasterService to handle API connection and requests
+- [x] Implement event search by location (lat/long or postal code)
 - [ ] Use iOS location to suggest search with current location
-- [ ] Parse Ticketmaster API response into local Event model
-- [ ] Create database table for cached events with `retrieved_at` timestamp
-- [ ] Implement per-user rate limiting (max 1 API call per day per user)
-- [ ] Store last API call timestamp per user in database
-- [ ] Save retrieved events to database with location and retrieval metadata
-- [ ] Display cached events from database in Touch Grass screen, replacing static data
-- [ ] Implement logic to refresh events only when >24 hours since last retrieval
-- [ ] Add event attendance tracking (many-to-many relationship between users and events)
-- [ ] Display attended event count on user profile
+- [x] Parse Ticketmaster API response into local Event model
+- [x] Create database table for cached events with `retrieved_at` timestamp
+- [x] Implement per-user rate limiting (max 1 API call per day per user)
+- [x] Store last API call timestamp per user in database
+- [x] Save retrieved events to database with location and retrieval metadata
+- [x] Display cached events from database in Touch Grass screen, replacing static data
+- [x] Implement logic to refresh events only when >24 hours since last retrieval
+- [x] Add event attendance tracking (many-to-many relationship between users and events)
+- [x] Display attended event count on user profile
 - [ ] Show list of attended events on user profile (with dates)
 - [ ] Pro-tier: Implement enhanced event recommendations based on user's activity history
 - [ ] Pro-tier: Create custom algorithm to match events with user preferences and badge levels

@@ -17,3 +17,6 @@ xcuserdata
 
 # Supabase credentials (use SupabaseConfig.swift.template as reference)
 Go Touch Grass/Go Touch Grass/Config/SupabaseConfig.swift
+
+# Ticketmaster API credentials (use TicketmasterConfig.swift.template as reference)
+Go Touch Grass/Go Touch Grass/Config/TicketmasterConfig.swift

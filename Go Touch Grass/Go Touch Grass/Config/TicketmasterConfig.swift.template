@@ -1,0 +1,25 @@
+import Foundation
+
+/// Configuration for Ticketmaster Discovery API
+///
+/// Instructions:
+/// 1. Copy this file to `TicketmasterConfig.swift` (without .template extension)
+/// 2. Replace "your-api-key-here" with your actual Ticketmaster API key
+/// 3. Never commit TicketmasterConfig.swift to version control
+///
+/// To get your API key:
+/// 1. Go to https://developer.ticketmaster.com/
+/// 2. Sign up or log in
+/// 3. Create a new app to get your API key (Consumer Key)
+/// 4. Free tier: 5,000 calls/day, 5 requests/second
+enum TicketmasterConfig {
+    static let apiKey = "your-api-key-here"
+    static let baseURL = "https://app.ticketmaster.com/discovery/v2"
+
+    /// Rate limiting configuration
+    static let maxCallsPerDay = 5000
+    static let maxRequestsPerSecond = 5
+
+    /// User rate limiting (to save on API quota)
+    static let userMaxCallsPerDay = 1
+}
