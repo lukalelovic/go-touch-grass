@@ -165,6 +165,7 @@ Goal: Replace fake data with real persistence
 - [ ] Dinner
 - [ ] Movie
 - [ ] Bar
+- [ ] Park
 - [ ] Basketball
 - [ ] Football
 - [ ] Soccer
@@ -172,9 +173,25 @@ Goal: Replace fake data with real persistence
 - [ ] Cleaning
 - [ ] Coffee (possible subtypes)
 
-#### Touch Grass Connects to API
-- [ ] Find public APIs/databases (ideally free or low-cost) to connect to for local outdoor events
-- [ ] Setup service for connection and retrieval of events based on location input
+#### Touch Grass API connectivity
+- [x] Find public APIs/databases (ideally free or low-cost) to connect to for local outdoor events
+- [ ] Register for Ticketmaster Discovery API and obtain API key (5,000 calls/day free tier)
+- [ ] Create Ticketmaster API config file (similar to SupabaseConfig.swift pattern)
+- [ ] Create TicketmasterService to handle API connection and requests
+- [ ] Implement event search by location (lat/long or postal code)
+- [ ] Use iOS location to suggest search with current location
+- [ ] Parse Ticketmaster API response into local Event model
+- [ ] Create database table for cached events with `retrieved_at` timestamp
+- [ ] Implement per-user rate limiting (max 1 API call per day per user)
+- [ ] Store last API call timestamp per user in database
+- [ ] Save retrieved events to database with location and retrieval metadata
+- [ ] Display cached events from database in Touch Grass screen, replacing static data
+- [ ] Implement logic to refresh events only when >24 hours since last retrieval
+- [ ] Add event attendance tracking (many-to-many relationship between users and events)
+- [ ] Display attended event count on user profile
+- [ ] Show list of attended events on user profile (with dates)
+- [ ] Pro-tier: Implement enhanced event recommendations based on user's activity history
+- [ ] Pro-tier: Create custom algorithm to match events with user preferences and badge levels
 
 ### Phase 5 - App Rollout
 
