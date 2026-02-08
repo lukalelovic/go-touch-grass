@@ -1,11 +1,16 @@
 import Foundation
 import CoreLocation
+import CommonCrypto
 
 // MARK: - Ticketmaster Event Model
 
 /// Represents an event from the Ticketmaster API (cached in database)
 struct TicketmasterEvent: Identifiable, Codable {
-    let id: String // Ticketmaster event ID
+    let id: UUID // Database UUID (not Ticketmaster ID)
+    let sourceId: String // External ID from Ticketmaster
+    let source: String // Always "ticketmaster"
+    let contentHash: String // SHA-256 hash for deduplication
+
     let name: String
     let description: String?
     let eventUrl: String?
@@ -26,11 +31,13 @@ struct TicketmasterEvent: Identifiable, Codable {
     let longitude: Double?
 
     // Event details
-    let category: String?
+    let sourceCategory: String? // Category from Ticketmaster
+    let sourceTags: [String]? // Tags array
     let genre: String?
     let priceMin: Double?
     let priceMax: Double?
     let currency: String?
+    let isFree: Bool?
 
     // Images
     let imageUrl: String?
@@ -43,6 +50,9 @@ struct TicketmasterEvent: Identifiable, Codable {
     let searchRadiusMiles: Int?
 
     let createdAt: Date?
+
+    // Computed property for backward compatibility
+    var category: String? { sourceCategory }
 
     // Computed properties
     var location: Location? {
@@ -83,6 +93,9 @@ struct TicketmasterEvent: Identifiable, Codable {
 
     enum CodingKeys: String, CodingKey {
         case id
+        case sourceId = "source_id"
+        case source
+        case contentHash = "content_hash"
         case name
         case description
         case eventUrl = "event_url"
@@ -97,11 +110,13 @@ struct TicketmasterEvent: Identifiable, Codable {
         case postalCode = "postal_code"
         case latitude
         case longitude
-        case category
+        case sourceCategory = "source_category"
+        case sourceTags = "source_tags"
         case genre
         case priceMin = "price_min"
         case priceMax = "price_max"
         case currency
+        case isFree = "is_free"
         case imageUrl = "image_url"
         case thumbnailUrl = "thumbnail_url"
         case retrievedAt = "retrieved_at"
@@ -247,6 +262,7 @@ struct TicketmasterAPIEvent: Codable {
         let priceMin = priceRange?.min
         let priceMax = priceRange?.max
         let currency = priceRange?.currency
+        let isFree = (priceMin == nil || priceMin == 0) && (priceMax == nil || priceMax == 0)
 
         // Get images
         let sortedImages = images?.sorted { ($0.width ?? 0) > ($1.width ?? 0) }
@@ -257,8 +273,16 @@ struct TicketmasterAPIEvent: Codable {
         let category = classifications?.first?.segment?.name
         let genre = classifications?.first?.genre?.name
 
+        // Create content hash for deduplication
+        // Hash based on source + source_id + name + start_date
+        let hashInput = "ticketmaster:\(id):\(name):\(startDate.timeIntervalSince1970)"
+        let contentHash = hashInput.sha256()
+
         return TicketmasterEvent(
-            id: id,
+            id: UUID(), // Temporary UUID, will be replaced by database
+            sourceId: id,
+            source: "ticketmaster",
+            contentHash: contentHash,
             name: name,
             description: description,
             eventUrl: url,
@@ -273,11 +297,13 @@ struct TicketmasterAPIEvent: Codable {
             postalCode: venue?.postalCode,
             latitude: latitude,
             longitude: longitude,
-            category: category,
+            sourceCategory: category,
+            sourceTags: genre != nil ? [genre!] : nil,
             genre: genre,
             priceMin: priceMin,
             priceMax: priceMax,
             currency: currency,
+            isFree: isFree,
             imageUrl: imageUrl,
             thumbnailUrl: thumbnailUrl,
             retrievedAt: Date(),
@@ -289,13 +315,25 @@ struct TicketmasterAPIEvent: Codable {
     }
 }
 
+// MARK: - String Extension for SHA-256
+extension String {
+    func sha256() -> String {
+        guard let data = self.data(using: .utf8) else { return self }
+        var hash = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
+        data.withUnsafeBytes {
+            _ = CC_SHA256($0.baseAddress, CC_LONG(data.count), &hash)
+        }
+        return hash.map { String(format: "%02x", $0) }.joined()
+    }
+}
+
 // MARK: - User Event Attendance Model
 
 /// Tracks which events a user has attended
 struct UserEventAttendance: Identifiable, Codable {
     let id: Int
     let userId: UUID
-    let eventId: String
+    let eventId: UUID // Changed from String to UUID
     let attendedAt: Date
     let notes: String?
     let rating: Int?

@@ -1062,198 +1062,6 @@ INSERT INTO user_follows (follower_id, following_id) VALUES
         (SELECT id FROM users WHERE username = 'outdoor_enthusiast')
     );
 
--- ============================================================================
--- USEFUL QUERIES (Documentation)
--- ============================================================================
-
--- ============================================================================
--- FEED QUERIES (Private - Only show activities from followed users)
--- ============================================================================
-
--- Get personalized activity feed for a user (only shows activities from users they follow)
--- This is the main query for the Feed tab - shows only followed users' activities
--- SELECT * FROM activities_with_stats
--- WHERE user_id IN (
---     SELECT following_id FROM user_follows WHERE follower_id = 'current-user-uuid-here'
--- )
--- ORDER BY timestamp DESC
--- LIMIT 50;
-
--- Alternative: Get feed with user's own activities included
--- SELECT * FROM activities_with_stats
--- WHERE user_id IN (
---     SELECT following_id FROM user_follows WHERE follower_id = 'current-user-uuid-here'
---     UNION
---     SELECT 'current-user-uuid-here'
--- )
--- ORDER BY timestamp DESC
--- LIMIT 50;
-
--- Get activities by a specific user (for profile view)
--- SELECT * FROM activities_with_stats WHERE user_id = 'user-uuid-here' ORDER BY timestamp DESC;
-
--- ============================================================================
--- FOLLOWING/FOLLOWER QUERIES
--- ============================================================================
-
--- Search for users by username (for finding users to follow)
--- SELECT id, username, email, profile_picture_url
--- FROM users
--- WHERE username ILIKE '%search-term%'
--- ORDER BY username
--- LIMIT 20;
-
--- Toggle follow/unfollow a user
--- SELECT toggle_user_follow('follower-user-uuid', 'user-to-follow-uuid');
-
--- Check if user A is following user B
--- SELECT is_following('user-a-uuid', 'user-b-uuid');
-
--- Get list of users that a user follows
--- SELECT u.id, u.username, u.email, u.profile_picture_url, uf.created_at AS followed_at
--- FROM user_follows uf
--- JOIN users u ON uf.following_id = u.id
--- WHERE uf.follower_id = 'user-uuid-here'
--- ORDER BY uf.created_at DESC;
-
--- Get list of users that follow a user (followers)
--- SELECT u.id, u.username, u.email, u.profile_picture_url, uf.created_at AS followed_at
--- FROM user_follows uf
--- JOIN users u ON uf.follower_id = u.id
--- WHERE uf.following_id = 'user-uuid-here'
--- ORDER BY uf.created_at DESC;
-
--- Get follower and following counts for a user
--- SELECT
---     get_follower_count('user-uuid-here') AS follower_count,
---     get_following_count('user-uuid-here') AS following_count;
-
--- Get user profile with stats (includes follower/following counts)
--- SELECT * FROM user_stats WHERE user_id = 'user-uuid-here';
-
--- ============================================================================
--- ACTIVITY LIKE QUERIES
--- ============================================================================
-
--- Get like count for an activity
--- SELECT like_count FROM activities_with_stats WHERE id = 'activity-uuid-here';
-
--- Check if user liked an activity
--- SELECT has_user_liked_activity('activity-uuid-here', 'user-uuid-here');
-
--- Toggle a like (like or unlike)
--- SELECT toggle_activity_like('activity-uuid-here', 'user-uuid-here');
-
--- Get all users who liked an activity
--- SELECT u.* FROM activity_likes al
--- JOIN users u ON al.user_id = u.id
--- WHERE al.activity_id = 'activity-uuid-here';
-
--- Get all activities a user has liked
--- SELECT a.* FROM activity_likes al
--- JOIN activities_with_stats a ON al.activity_id = a.id
--- WHERE al.user_id = 'user-uuid-here';
-
--- ============================================================================
--- BADGE AND LEVEL QUERIES (Documentation)
--- ============================================================================
-
--- Get user's current level and milestone progress
--- Note: Level equals total activities (50 activities = level 50)
--- Milestones are named achievements at specific levels (1, 5, 10, 25, 50, 75, 100, 500)
--- SELECT * FROM user_current_levels WHERE user_id = 'user-uuid-here';
-
--- Get all user statistics (activities, likes, etc.)
--- SELECT * FROM user_stats WHERE user_id = 'user-uuid-here';
-
--- Get user's streak
--- SELECT get_user_streak('user-uuid-here');
-
--- Get all badges for a user (locked and unlocked)
--- SELECT * FROM user_badge_progress
--- WHERE user_id = 'user-uuid-here'
--- ORDER BY is_unlocked DESC, display_order;
-
--- Get only unlocked badges for a user
--- SELECT * FROM user_badge_progress
--- WHERE user_id = 'user-uuid-here' AND is_unlocked = true
--- ORDER BY unlocked_at DESC;
-
--- Get only locked badges for a user
--- SELECT * FROM user_badge_progress
--- WHERE user_id = 'user-uuid-here' AND is_unlocked = false
--- ORDER BY display_order;
-
--- Check and award any new badges user has earned
--- SELECT * FROM check_and_award_badges('user-uuid-here');
-
--- Get all level milestones
--- SELECT * FROM level_milestones ORDER BY milestone_level;
-
--- Check if user has reached a specific milestone
--- SELECT
---     us.user_id,
---     us.username,
---     us.total_activities AS current_level,
---     lm.milestone_level,
---     lm.name AS milestone_name,
---     us.total_activities >= lm.milestone_level AS has_reached_milestone
--- FROM user_stats us
--- CROSS JOIN level_milestones lm
--- WHERE us.user_id = 'user-uuid-here'
--- ORDER BY lm.milestone_level;
-
--- Get leaderboard by level (total activities)
--- SELECT
---     user_id,
---     username,
---     current_level,
---     total_activities,
---     milestone_name,
---     current_milestone_level
--- FROM user_current_levels
--- ORDER BY current_level DESC
--- LIMIT 10;
-
--- Get leaderboard by highest milestone reached
--- SELECT
---     user_id,
---     username,
---     current_level,
---     current_milestone_level,
---     milestone_name,
---     total_activities
--- FROM user_current_levels
--- ORDER BY current_milestone_level DESC NULLS LAST, current_level DESC
--- LIMIT 10;
-
--- Get users who recently unlocked a specific badge
--- SELECT u.username, ub.unlocked_at
--- FROM user_badges ub
--- JOIN users u ON ub.user_id = u.id
--- WHERE ub.badge_id = (SELECT id FROM badges WHERE name = 'First Steps')
--- ORDER BY ub.unlocked_at DESC
--- LIMIT 10;
-
--- Get users who recently reached a specific milestone
--- SELECT
---     u.username,
---     a.timestamp AS milestone_reached_at,
---     COUNT(*) OVER (PARTITION BY u.id ORDER BY a.timestamp) AS activity_count
--- FROM users u
--- JOIN activities a ON u.id = a.user_id
--- WHERE (
---     SELECT COUNT(*)
---     FROM activities a2
---     WHERE a2.user_id = u.id AND a2.timestamp <= a.timestamp
--- ) = 50  -- Replace 50 with desired milestone level
--- ORDER BY a.timestamp DESC
--- LIMIT 10;
-
--- ============================================================================
--- Enable Row Level Security (RLS)
--- ============================================================================
-
 -- Enable RLS on all tables
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_follows ENABLE ROW LEVEL SECURITY;
@@ -1265,10 +1073,6 @@ ALTER TABLE activity_subtypes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE badges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_badges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE level_milestones ENABLE ROW LEVEL SECURITY;
-
--- ============================================================================
--- Security Policies
--- ============================================================================
 
 -- ----------------------------------------------------------------------------
 -- USERS TABLE POLICIES
@@ -1554,8 +1358,6 @@ ON storage.objects
 FOR SELECT
 USING (bucket_id = 'avatars');
 
--- ----------------------------------------------------------------------------
-
 -- ============================================================================
 -- USER PROFILE PICTURE UPDATE FUNCTION
 -- ============================================================================
@@ -1585,32 +1387,35 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- ----------------------------------------------------------------------------
-
 -- Only service role can modify level milestones (admin only)
 -- No INSERT, UPDATE, or DELETE policies = only service role can modify
 
 -- ============================================================================
--- TICKETMASTER EVENTS INTEGRATION
+-- EVENTS
 -- ============================================================================
--- Added: 2026-01-25
--- Description: Tables for caching Ticketmaster events and tracking user event attendance
+CREATE TYPE event_source AS ENUM (
+    'ticketmaster',
+    'manual'
+);
 
--- ============================================================================
--- TICKETMASTER_EVENTS TABLE (Cached Events)
--- ============================================================================
-CREATE TABLE IF NOT EXISTS ticketmaster_events (
-    id VARCHAR(255) PRIMARY KEY, -- Ticketmaster event ID
+CREATE TABLE events (
+    -- Primary identification
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    source event_source NOT NULL,
+    source_id VARCHAR(255), -- External ID from source API
+    content_hash VARCHAR(64) UNIQUE NOT NULL, -- SHA-256 for deduplication
+
+    -- Event details
     name VARCHAR(500) NOT NULL,
     description TEXT,
     event_url TEXT,
 
-    -- Date/Time information
+    -- Date/Time
     start_date TIMESTAMP WITH TIME ZONE NOT NULL,
     end_date TIMESTAMP WITH TIME ZONE,
     timezone VARCHAR(100),
 
-    -- Location information
+    -- Location
     venue_name VARCHAR(255),
     venue_address TEXT,
     city VARCHAR(100),
@@ -1620,80 +1425,85 @@ CREATE TABLE IF NOT EXISTS ticketmaster_events (
     latitude DECIMAL(10, 8),
     longitude DECIMAL(11, 8),
 
-    -- Event details
-    category VARCHAR(100), -- Music, Sports, Arts, Family, etc.
-    genre VARCHAR(100),
+    -- Categorization (maps to activity_types)
+    activity_type_id INTEGER REFERENCES activity_types(id) ON DELETE SET NULL,
+    source_category VARCHAR(100), -- Original category from source
+    source_tags TEXT[], -- Array of tags from source
+
+    -- Pricing
     price_min DECIMAL(10, 2),
     price_max DECIMAL(10, 2),
     currency VARCHAR(10) DEFAULT 'USD',
+    is_free BOOLEAN DEFAULT false,
 
-    -- Images
+    -- Media
     image_url TEXT,
     thumbnail_url TEXT,
 
-    -- Metadata for caching
+    -- Metadata
     retrieved_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     search_location_lat DECIMAL(10, 8),
     search_location_long DECIMAL(11, 8),
     search_radius_miles INTEGER,
 
+    -- Relevance scoring (calculated)
+    relevance_score DECIMAL(5, 2) DEFAULT 50.0, -- 0-100 based on user preferences
+
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
     -- Constraints
     CONSTRAINT valid_event_coordinates CHECK (
         (latitude IS NULL AND longitude IS NULL) OR
         (latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180)
     ),
-    CONSTRAINT valid_search_coordinates CHECK (
+    CONSTRAINT valid_search_coords CHECK (
         (search_location_lat IS NULL AND search_location_long IS NULL) OR
         (search_location_lat BETWEEN -90 AND 90 AND search_location_long BETWEEN -180 AND 180)
-    )
+    ),
+    CONSTRAINT valid_relevance_score CHECK (relevance_score BETWEEN 0 AND 100)
 );
 
--- Indexes for common queries
-CREATE INDEX IF NOT EXISTS idx_ticketmaster_events_start_date ON ticketmaster_events(start_date);
-CREATE INDEX IF NOT EXISTS idx_ticketmaster_events_location ON ticketmaster_events(latitude, longitude) WHERE latitude IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_ticketmaster_events_search_location ON ticketmaster_events(search_location_lat, search_location_long) WHERE search_location_lat IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_ticketmaster_events_retrieved_at ON ticketmaster_events(retrieved_at DESC);
-CREATE INDEX IF NOT EXISTS idx_ticketmaster_events_category ON ticketmaster_events(category);
-CREATE INDEX IF NOT EXISTS idx_ticketmaster_events_city ON ticketmaster_events(city);
+-- Indexes
+CREATE INDEX idx_events_source ON events(source);
+CREATE INDEX idx_events_activity_type ON events(activity_type_id);
+CREATE INDEX idx_events_start_date ON events(start_date);
+CREATE INDEX idx_events_location ON events(latitude, longitude) WHERE latitude IS NOT NULL;
+CREATE INDEX idx_events_content_hash ON events(content_hash);
+CREATE INDEX idx_events_is_free ON events(is_free);
+CREATE INDEX idx_events_relevance_score ON events(relevance_score DESC);
+CREATE INDEX idx_events_city ON events(city);
+CREATE INDEX idx_events_retrieved_at ON events(retrieved_at DESC);
 
--- ============================================================================
--- USER_EVENT_API_CALLS TABLE (Rate Limiting)
--- ============================================================================
-CREATE TABLE IF NOT EXISTS user_event_api_calls (
+CREATE TABLE event_category_mappings (
     id SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-
-    -- Location of the search
-    search_latitude DECIMAL(10, 8),
-    search_longitude DECIMAL(11, 8),
-    search_location_name VARCHAR(255),
-    search_radius_miles INTEGER DEFAULT 50,
-
-    -- API call metadata
-    called_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    events_retrieved INTEGER DEFAULT 0,
-    success BOOLEAN DEFAULT true,
-    error_message TEXT,
-
-    CONSTRAINT valid_search_coords CHECK (
-        (search_latitude IS NULL AND search_longitude IS NULL) OR
-        (search_latitude BETWEEN -90 AND 90 AND search_longitude BETWEEN -180 AND 180)
-    )
+    source event_source NOT NULL,
+    source_category VARCHAR(255) NOT NULL,
+    source_tag VARCHAR(255),
+    activity_type_id INTEGER REFERENCES activity_types(id) ON DELETE CASCADE,
+    confidence DECIMAL(3, 2) DEFAULT 1.0 CHECK (confidence BETWEEN 0 AND 1)
 );
 
--- Indexes for rate limiting queries
-CREATE INDEX IF NOT EXISTS idx_user_event_api_calls_user_id ON user_event_api_calls(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_event_api_calls_called_at ON user_event_api_calls(called_at DESC);
+-- Create unique index with COALESCE for nullable source_tag
+CREATE UNIQUE INDEX idx_event_category_mappings_unique
+ON event_category_mappings(source, source_category, COALESCE(source_tag, ''));
 
--- ============================================================================
--- USER_EVENT_ATTENDANCE TABLE (Track Attended Events)
--- ============================================================================
-CREATE TABLE IF NOT EXISTS user_event_attendance (
+CREATE INDEX idx_event_category_mappings_source ON event_category_mappings(source);
+CREATE INDEX idx_event_category_mappings_activity_type ON event_category_mappings(activity_type_id);
+
+-- Seed initial mappings for Ticketmaster categories
+INSERT INTO event_category_mappings (source, source_category, activity_type_id, confidence) VALUES
+    -- Ticketmaster mappings
+    ('ticketmaster', 'Sports', (SELECT id FROM activity_types WHERE name = 'Running'), 0.5),
+    ('ticketmaster', 'Music', (SELECT id FROM activity_types WHERE name = 'Other'), 0.3),
+    ('ticketmaster', 'Arts & Theatre', (SELECT id FROM activity_types WHERE name = 'Other'), 0.2),
+    ('ticketmaster', 'Family', (SELECT id FROM activity_types WHERE name = 'Walking'), 0.4);
+
+-- Create new attendance table with UUID references
+CREATE TABLE user_event_attendance (
     id SERIAL PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    event_id VARCHAR(255) NOT NULL REFERENCES ticketmaster_events(id) ON DELETE CASCADE,
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
 
     -- Attendance details
     attended_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -1706,32 +1516,332 @@ CREATE TABLE IF NOT EXISTS user_event_attendance (
     CONSTRAINT unique_user_event_attendance UNIQUE(user_id, event_id)
 );
 
--- Indexes for attendance queries
-CREATE INDEX IF NOT EXISTS idx_user_event_attendance_user_id ON user_event_attendance(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_event_attendance_event_id ON user_event_attendance(event_id);
-CREATE INDEX IF NOT EXISTS idx_user_event_attendance_attended_at ON user_event_attendance(attended_at DESC);
+CREATE INDEX idx_user_event_attendance_user_id ON user_event_attendance(user_id);
+CREATE INDEX idx_user_event_attendance_event_id ON user_event_attendance(event_id);
+CREATE INDEX idx_user_event_attendance_attended_at ON user_event_attendance(attended_at DESC);
 
--- ============================================================================
--- TICKETMASTER EVENT FUNCTIONS
--- ============================================================================
+create table event_api_calls (
+  id serial not null,
+  user_id uuid not null,
+  search_latitude numeric(10, 8) null,
+  search_longitude numeric(11, 8) null,
+  search_location_name character varying(255) null,
+  search_radius_miles integer null default 50,
+  called_at timestamp with time zone null default CURRENT_TIMESTAMP,
+  events_retrieved integer null default 0,
+  success boolean null default true,
+  error_message text null,
+  source public.event_source null default 'ticketmaster'::event_source,
+  constraint user_event_api_calls_pkey primary key (id),
+  constraint user_event_api_calls_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE,
+  constraint valid_search_coords check (
+    (
+      (
+        (search_latitude is null)
+        and (search_longitude is null)
+      )
+      or (
+        (
+          (search_latitude >= ('-90'::integer)::numeric)
+          and (search_latitude <= (90)::numeric)
+        )
+        and (
+          (search_longitude >= ('-180'::integer)::numeric)
+          and (search_longitude <= (180)::numeric)
+        )
+      )
+    )
+  )
+) TABLESPACE pg_default;
 
--- Drop existing functions first
+create index IF not exists idx_user_event_api_calls_user_id on public.event_api_calls using btree (user_id) TABLESPACE pg_default;
+create index IF not exists idx_user_event_api_calls_called_at on public.event_api_calls using btree (called_at desc) TABLESPACE pg_default;
+
+CREATE OR REPLACE FUNCTION upsert_event(
+    p_content_hash VARCHAR(64),
+    p_source event_source,
+    p_source_id VARCHAR(255),
+    p_name VARCHAR(500),
+    p_description TEXT,
+    p_event_url TEXT,
+    p_start_date TIMESTAMP WITH TIME ZONE,
+    p_end_date TIMESTAMP WITH TIME ZONE,
+    p_timezone VARCHAR(100),
+    p_venue_name VARCHAR(255),
+    p_venue_address TEXT,
+    p_city VARCHAR(100),
+    p_state VARCHAR(100),
+    p_country VARCHAR(100),
+    p_postal_code VARCHAR(20),
+    p_latitude DECIMAL(10, 8),
+    p_longitude DECIMAL(11, 8),
+    p_source_category VARCHAR(100),
+    p_source_tags TEXT[],
+    p_price_min DECIMAL(10, 2),
+    p_price_max DECIMAL(10, 2),
+    p_currency VARCHAR(10),
+    p_is_free BOOLEAN,
+    p_image_url TEXT,
+    p_thumbnail_url TEXT,
+    p_search_location_lat DECIMAL(10, 8),
+    p_search_location_long DECIMAL(11, 8),
+    p_search_radius_miles INTEGER
+) RETURNS UUID AS $$
+DECLARE
+    v_event_id UUID;
+BEGIN
+    -- Try to find existing event by hash
+    SELECT id INTO v_event_id
+    FROM events
+    WHERE content_hash = p_content_hash;
+
+    IF v_event_id IS NOT NULL THEN
+        -- Event exists - update retrieved_at and merge data
+        UPDATE events
+        SET
+            retrieved_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP,
+            -- Update image if new one is better (has value and old doesn't)
+            image_url = COALESCE(events.image_url, p_image_url),
+            thumbnail_url = COALESCE(events.thumbnail_url, p_thumbnail_url),
+            -- Update description if new one is longer/better
+            description = CASE
+                WHEN LENGTH(COALESCE(p_description, '')) > LENGTH(COALESCE(events.description, ''))
+                THEN p_description
+                ELSE events.description
+            END,
+            -- Update other potentially missing fields
+            event_url = COALESCE(events.event_url, p_event_url),
+            venue_address = COALESCE(events.venue_address, p_venue_address),
+            postal_code = COALESCE(events.postal_code, p_postal_code)
+        WHERE id = v_event_id;
+    ELSE
+        -- New event - insert
+        INSERT INTO events (
+            content_hash,
+            source,
+            source_id,
+            name,
+            description,
+            event_url,
+            start_date,
+            end_date,
+            timezone,
+            venue_name,
+            venue_address,
+            city,
+            state,
+            country,
+            postal_code,
+            latitude,
+            longitude,
+            source_category,
+            source_tags,
+            price_min,
+            price_max,
+            currency,
+            is_free,
+            image_url,
+            thumbnail_url,
+            search_location_lat,
+            search_location_long,
+            search_radius_miles
+        ) VALUES (
+            p_content_hash,
+            p_source,
+            p_source_id,
+            p_name,
+            p_description,
+            p_event_url,
+            p_start_date,
+            p_end_date,
+            p_timezone,
+            p_venue_name,
+            p_venue_address,
+            p_city,
+            p_state,
+            p_country,
+            p_postal_code,
+            p_latitude,
+            p_longitude,
+            p_source_category,
+            p_source_tags,
+            p_price_min,
+            p_price_max,
+            p_currency,
+            p_is_free,
+            p_image_url,
+            p_thumbnail_url,
+            p_search_location_lat,
+            p_search_location_long,
+            p_search_radius_miles
+        )
+        RETURNING id INTO v_event_id;
+
+        -- Auto-classify activity type for new event
+        PERFORM classify_event_activity_type(v_event_id);
+    END IF;
+
+    RETURN v_event_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to classify event's activity type
+CREATE OR REPLACE FUNCTION classify_event_activity_type(p_event_id UUID)
+RETURNS INTEGER AS $$
+DECLARE
+    v_activity_type_id INTEGER;
+    v_event_source event_source;
+    v_source_category VARCHAR(255);
+    v_source_tags TEXT[];
+BEGIN
+    -- Get event details
+    SELECT source, source_category, source_tags
+    INTO v_event_source, v_source_category, v_source_tags
+    FROM events
+    WHERE id = p_event_id;
+
+    -- Try to find mapping by source category
+    SELECT activity_type_id INTO v_activity_type_id
+    FROM event_category_mappings
+    WHERE source = v_event_source
+      AND LOWER(source_category) = LOWER(v_source_category)
+      AND source_tag IS NULL
+    ORDER BY confidence DESC
+    LIMIT 1;
+
+    -- If not found, try by tags
+    IF v_activity_type_id IS NULL AND v_source_tags IS NOT NULL THEN
+        SELECT activity_type_id INTO v_activity_type_id
+        FROM event_category_mappings
+        WHERE source = v_event_source
+          AND source_tag = ANY(v_source_tags)
+        ORDER BY confidence DESC
+        LIMIT 1;
+    END IF;
+
+    -- Default to 'Other' if no mapping found
+    v_activity_type_id := COALESCE(
+        v_activity_type_id,
+        (SELECT id FROM activity_types WHERE name = 'Other')
+    );
+
+    -- Update event with classified activity type
+    UPDATE events
+    SET activity_type_id = v_activity_type_id
+    WHERE id = p_event_id;
+
+    RETURN v_activity_type_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to calculate event relevance for a user
+CREATE OR REPLACE FUNCTION calculate_event_relevance(
+    p_user_id UUID,
+    p_event_id UUID
+) RETURNS DECIMAL(5,2) AS $$
+DECLARE
+    v_score DECIMAL(5,2) := 50.0; -- Base score
+    v_user_activity_types JSONB;
+    v_event_activity_type INTEGER;
+    v_activity_type_name VARCHAR(50);
+    v_user_activity_count INTEGER;
+    v_is_free BOOLEAN;
+BEGIN
+    -- Get user's activity type preferences
+    SELECT activities_by_type INTO v_user_activity_types
+    FROM user_stats
+    WHERE user_id = p_user_id;
+
+    -- Get event's activity type and free status
+    SELECT activity_type_id, is_free INTO v_event_activity_type, v_is_free
+    FROM events
+    WHERE id = p_event_id;
+
+    -- If user has activity history and event has activity type
+    IF v_user_activity_types IS NOT NULL AND v_event_activity_type IS NOT NULL THEN
+        -- Get activity type name
+        SELECT name INTO v_activity_type_name
+        FROM activity_types
+        WHERE id = v_event_activity_type;
+
+        -- Get user's count for this activity type
+        v_user_activity_count := COALESCE(
+            (v_user_activity_types->>v_activity_type_name)::INTEGER,
+            0
+        );
+
+        -- Boost score based on user's experience (up to +30 points)
+        -- More activities of this type = higher relevance
+        v_score := v_score + LEAST(30, v_user_activity_count * 2);
+    END IF;
+
+    -- Boost for free events (+10 points)
+    IF v_is_free THEN
+        v_score := v_score + 10;
+    END IF;
+
+    -- TODO: Add location-based scoring (proximity boost)
+    -- TODO: Add time-based scoring (events happening soon)
+
+    -- Cap at 100
+    v_score := LEAST(v_score, 100);
+
+    -- Update the event's relevance score
+    UPDATE events
+    SET relevance_score = v_score
+    WHERE id = p_event_id;
+
+    RETURN v_score;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to clean up old events
+CREATE OR REPLACE FUNCTION cleanup_old_events()
+RETURNS INTEGER AS $$
+DECLARE
+    v_deleted_count INTEGER;
+BEGIN
+    -- Delete events that:
+    -- 1. Started more than 7 days ago
+    -- 2. Have no attendance records (keep attended events for history)
+    DELETE FROM events
+    WHERE start_date < (CURRENT_TIMESTAMP - INTERVAL '7 days')
+      AND id NOT IN (
+          SELECT DISTINCT event_id
+          FROM user_event_attendance
+      );
+
+    GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
+    RETURN v_deleted_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Drop old ticketmaster-specific functions
 DROP FUNCTION IF EXISTS can_user_call_event_api(UUID);
 DROP FUNCTION IF EXISTS record_event_api_call(UUID, DECIMAL, DECIMAL, VARCHAR, INTEGER, INTEGER, BOOLEAN, TEXT);
-DROP FUNCTION IF EXISTS get_user_attended_event_count(UUID);
-DROP FUNCTION IF EXISTS has_user_attended_event(UUID, VARCHAR);
-DROP FUNCTION IF EXISTS mark_event_attended(UUID, VARCHAR, TEXT, INTEGER);
 
--- Function to check if user can make API call (once per day limit)
-CREATE OR REPLACE FUNCTION can_user_call_event_api(p_user_id UUID)
-RETURNS BOOLEAN AS $$
+-- Function to check if user can call API (per source)
+CREATE OR REPLACE FUNCTION can_user_call_event_api(
+    p_user_id UUID,
+    p_source event_source
+) RETURNS BOOLEAN AS $$
 DECLARE
     v_last_call TIMESTAMP WITH TIME ZONE;
+    v_interval INTERVAL;
 BEGIN
-    -- Get the most recent API call for this user
+    -- Different rate limits per source
+    v_interval := CASE p_source
+        WHEN 'eventbrite' THEN INTERVAL '24 hours'
+        WHEN 'ticketmaster' THEN INTERVAL '24 hours'
+        WHEN 'rss_feed' THEN INTERVAL '6 hours'
+        ELSE INTERVAL '24 hours'
+    END;
+
+    -- Get the most recent API call for this user and source
     SELECT called_at INTO v_last_call
-    FROM user_event_api_calls
-    WHERE user_id = p_user_id
+    FROM event_api_calls
+    WHERE user_id = p_user_id AND source = p_source
     ORDER BY called_at DESC
     LIMIT 1;
 
@@ -1740,18 +1850,15 @@ BEGIN
         RETURN TRUE;
     END IF;
 
-    -- Check if last call was more than 24 hours ago
-    IF v_last_call < (CURRENT_TIMESTAMP - INTERVAL '24 hours') THEN
-        RETURN TRUE;
-    ELSE
-        RETURN FALSE;
-    END IF;
+    -- Check if last call was more than interval ago
+    RETURN (v_last_call < (CURRENT_TIMESTAMP - v_interval));
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to record API call
+-- Function to record API call with source
 CREATE OR REPLACE FUNCTION record_event_api_call(
     p_user_id UUID,
+    p_source event_source,
     p_search_lat DECIMAL,
     p_search_long DECIMAL,
     p_search_location_name VARCHAR,
@@ -1759,13 +1866,13 @@ CREATE OR REPLACE FUNCTION record_event_api_call(
     p_events_retrieved INTEGER,
     p_success BOOLEAN DEFAULT true,
     p_error_message TEXT DEFAULT NULL
-)
-RETURNS INTEGER AS $$
+) RETURNS INTEGER AS $$
 DECLARE
     v_call_id INTEGER;
 BEGIN
-    INSERT INTO user_event_api_calls (
+    INSERT INTO event_api_calls (
         user_id,
+        source,
         search_latitude,
         search_longitude,
         search_location_name,
@@ -1775,6 +1882,7 @@ BEGIN
         error_message
     ) VALUES (
         p_user_id,
+        p_source,
         p_search_lat,
         p_search_long,
         p_search_location_name,
@@ -1789,22 +1897,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to get user's attended event count
-CREATE OR REPLACE FUNCTION get_user_attended_event_count(p_user_id UUID)
-RETURNS INTEGER AS $$
-BEGIN
-    RETURN (
-        SELECT COUNT(*)
-        FROM user_event_attendance
-        WHERE user_id = p_user_id
-    )::INTEGER;
-END;
-$$ LANGUAGE plpgsql;
 
--- Function to check if user attended an event
+CREATE OR REPLACE VIEW user_event_stats AS
+SELECT
+    u.id AS user_id,
+    u.username,
+    COUNT(DISTINCT uea.event_id) AS events_attended,
+    COUNT(DISTINCT eac.id) AS total_api_calls,
+    MAX(eac.called_at) AS last_api_call,
+    -- Check if user can call any API (defaults to ticketmaster for backward compatibility)
+    can_user_call_event_api(u.id, 'ticketmaster'::event_source) AS can_call_api_now
+FROM users u
+    LEFT JOIN user_event_attendance uea ON u.id = uea.user_id
+    LEFT JOIN event_api_calls eac ON u.id = eac.user_id
+GROUP BY u.id, u.username;
+
+-- Recreate with UUID event_id parameter
 CREATE OR REPLACE FUNCTION has_user_attended_event(
     p_user_id UUID,
-    p_event_id VARCHAR
+    p_event_id UUID
 )
 RETURNS BOOLEAN AS $$
 BEGIN
@@ -1815,10 +1926,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to mark event as attended
 CREATE OR REPLACE FUNCTION mark_event_attended(
     p_user_id UUID,
-    p_event_id VARCHAR,
+    p_event_id UUID,
     p_notes TEXT DEFAULT NULL,
     p_rating INTEGER DEFAULT NULL
 )
@@ -1834,89 +1944,34 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE TRIGGER update_events_updated_at
+    BEFORE UPDATE ON events
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
 -- ============================================================================
--- TICKETMASTER EVENTS RLS POLICIES
+-- STEP 10: Enable RLS on Events
 -- ============================================================================
 
--- Enable RLS on all tables
-ALTER TABLE ticketmaster_events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_event_api_calls ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_event_attendance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE event_category_mappings ENABLE ROW LEVEL SECURITY;
 
--- Ticketmaster Events Policies
--- Anyone can view cached events
-CREATE POLICY "Anyone can view ticketmaster events"
-ON ticketmaster_events
-FOR SELECT
-USING (true);
+-- Events policies (same as before - public read)
+CREATE POLICY "Anyone can view events"
+ON events FOR SELECT USING (true);
 
--- Only service can insert/update events (managed by backend)
--- No INSERT/UPDATE/DELETE policies = only service role can modify
+-- Category mappings policies (public read)
+CREATE POLICY "Anyone can view category mappings"
+ON event_category_mappings FOR SELECT USING (true);
 
--- User Event API Calls Policies
--- Users can only view their own API call history
+-- Update event_api_calls policies
+DROP POLICY IF EXISTS "Users can view their own API calls" ON event_api_calls;
+DROP POLICY IF EXISTS "Users can record their own API calls" ON event_api_calls;
+
 CREATE POLICY "Users can view their own API calls"
-ON user_event_api_calls
-FOR SELECT
+ON event_api_calls FOR SELECT
 USING (user_id = auth.uid());
 
--- Users can insert their own API call records
 CREATE POLICY "Users can record their own API calls"
-ON user_event_api_calls
-FOR INSERT
+ON event_api_calls FOR INSERT
 WITH CHECK (user_id = auth.uid());
-
--- User Event Attendance Policies
--- Anyone can view event attendance (for displaying counts)
-CREATE POLICY "Anyone can view event attendance"
-ON user_event_attendance
-FOR SELECT
-USING (true);
-
--- Users can only mark their own attendance
-CREATE POLICY "Users can mark their own attendance"
-ON user_event_attendance
-FOR INSERT
-WITH CHECK (user_id = auth.uid());
-
--- Users can update their own attendance records
-CREATE POLICY "Users can update their own attendance"
-ON user_event_attendance
-FOR UPDATE
-USING (user_id = auth.uid())
-WITH CHECK (user_id = auth.uid());
-
--- Users can delete their own attendance records
-CREATE POLICY "Users can delete their own attendance"
-ON user_event_attendance
-FOR DELETE
-USING (user_id = auth.uid());
-
--- ============================================================================
--- TICKETMASTER EVENTS VIEWS
--- ============================================================================
-
--- View to get user event statistics
-CREATE OR REPLACE VIEW user_event_stats AS
-SELECT
-    u.id AS user_id,
-    u.username,
-    COUNT(DISTINCT uea.event_id) AS events_attended,
-    COUNT(DISTINCT ueac.id) AS total_api_calls,
-    MAX(ueac.called_at) AS last_api_call,
-    can_user_call_event_api(u.id) AS can_call_api_now
-FROM users u
-    LEFT JOIN user_event_attendance uea ON u.id = uea.user_id
-    LEFT JOIN user_event_api_calls ueac ON u.id = ueac.user_id
-GROUP BY u.id, u.username;
-
--- View to get upcoming events with attendance counts
-CREATE OR REPLACE VIEW upcoming_events_with_stats AS
-SELECT
-    te.*,
-    COUNT(DISTINCT uea.user_id) AS total_attendees
-FROM ticketmaster_events te
-    LEFT JOIN user_event_attendance uea ON te.id = uea.event_id
-WHERE te.start_date >= CURRENT_TIMESTAMP
-GROUP BY te.id
-ORDER BY te.start_date ASC;

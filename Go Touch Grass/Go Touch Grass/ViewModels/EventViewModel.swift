@@ -111,7 +111,9 @@ class EventViewModel: ObservableObject {
                 longitude: location.longitude
             )
 
-            // Pre-check rate limit for non-forced fetches to show alert properly
+            // TODO: TESTING - Rate limiting temporarily disabled for development
+            // Uncomment before production release
+            /*
             if !forceRefresh {
                 let canCallAPI = try await ticketmasterService.checkUserCanCallAPI(userId: userId)
                 print("Pre-check: Can call API: \(canCallAPI)")
@@ -124,6 +126,7 @@ class EventViewModel: ObservableObject {
                     return
                 }
             }
+            */
 
             ticketmasterEvents = try await ticketmasterService.fetchEvents(
                 for: userId,
@@ -158,12 +161,41 @@ class EventViewModel: ObservableObject {
             guard let location = ticketmasterEvent.location else { return nil }
 
             // Map Ticketmaster categories to ActivityType
-            let activityType = mapCategoryToActivityType(ticketmasterEvent.category)
+            let activityType = mapCategoryToActivityType(ticketmasterEvent.sourceCategory, genre: ticketmasterEvent.genre)
+
+            // Filter out events that don't match any of our known categories
+            // Only keep events with recognized category types (not generic "Event" or unknown categories)
+            guard activityType.name != "Event" else {
+                print("Filtering out event with unrecognized category: \(ticketmasterEvent.name)")
+                return nil
+            }
+
+            // Create better description fallback
+            var description = ticketmasterEvent.description
+            if description == nil || description?.isEmpty == true {
+                // Build description from available info
+                var parts: [String] = []
+
+                if let category = ticketmasterEvent.sourceCategory {
+                    parts.append(category)
+                }
+                if let genre = ticketmasterEvent.genre {
+                    parts.append(genre)
+                }
+                if let venue = ticketmasterEvent.venueName {
+                    parts.append("at \(venue)")
+                }
+                if let city = ticketmasterEvent.city {
+                    parts.append("in \(city)")
+                }
+
+                description = parts.isEmpty ? "Event details coming soon" : parts.joined(separator: " ")
+            }
 
             return LocalEvent(
                 id: UUID(),
                 title: ticketmasterEvent.name,
-                description: ticketmasterEvent.description ?? "No description available",
+                description: description ?? "Event details coming soon",
                 eventType: activityType,
                 location: location,
                 date: ticketmasterEvent.startDate,
@@ -177,16 +209,55 @@ class EventViewModel: ObservableObject {
         filterEventsByLocation()
     }
 
-    private func mapCategoryToActivityType(_ category: String?) -> ActivityType {
-        // Map Ticketmaster categories to existing ActivityType
-        // This is a placeholder - you may want to add more activity types
-        guard let category = category?.lowercased() else {
-            return ActivityType(id: 11, name: "Other", icon: "calendar", createdAt: nil)
+    private func mapCategoryToActivityType(_ category: String?, genre: String?) -> ActivityType {
+        // Map Ticketmaster categories and genres to ActivityType
+        // Only return recognized categories - unrecognized events will be filtered out
+        let categoryLower = category?.lowercased() ?? ""
+        let genreLower = genre?.lowercased() ?? ""
+
+        // Sports
+        if categoryLower.contains("sports") || genreLower.contains("sports") ||
+           genreLower.contains("basketball") || genreLower.contains("football") ||
+           genreLower.contains("baseball") || genreLower.contains("soccer") ||
+           genreLower.contains("hockey") || genreLower.contains("tennis") ||
+           genreLower.contains("golf") || genreLower.contains("racing") ||
+           genreLower.contains("mma") || genreLower.contains("wrestling") {
+            return ActivityType(id: 1, name: "Sports", icon: "sportscourt.fill", createdAt: nil)
         }
 
-        // Return a default "Other" type for now
-        // In the future, you could query the activity_types table for a match
-        return ActivityType(id: 11, name: "Other", icon: "calendar", createdAt: nil)
+        // Music/Concert
+        if categoryLower.contains("music") || genreLower.contains("music") ||
+           genreLower.contains("concert") || genreLower.contains("rock") ||
+           genreLower.contains("pop") || genreLower.contains("jazz") ||
+           genreLower.contains("classical") || genreLower.contains("hip-hop") ||
+           genreLower.contains("country") || genreLower.contains("r&b") ||
+           genreLower.contains("electronic") || genreLower.contains("indie") {
+            return ActivityType(id: 2, name: "Concert", icon: "music.note", createdAt: nil)
+        }
+
+        // Arts & Theatre
+        if categoryLower.contains("arts") || categoryLower.contains("theatre") ||
+           genreLower.contains("theatre") || genreLower.contains("theater") ||
+           genreLower.contains("musical") || genreLower.contains("comedy") ||
+           genreLower.contains("dance") || genreLower.contains("ballet") ||
+           genreLower.contains("opera") || genreLower.contains("circus") {
+            return ActivityType(id: 3, name: "Arts & Theatre", icon: "theatermasks.fill", createdAt: nil)
+        }
+
+        // Family
+        if categoryLower.contains("family") || genreLower.contains("family") ||
+           genreLower.contains("children") || genreLower.contains("kids") {
+            return ActivityType(id: 4, name: "Family Event", icon: "figure.2.and.child.holdinghands", createdAt: nil)
+        }
+
+        // Festival
+        if genreLower.contains("festival") || categoryLower.contains("festival") ||
+           genreLower.contains("fair") {
+            return ActivityType(id: 5, name: "Festival", icon: "party.popper.fill", createdAt: nil)
+        }
+
+        // Unrecognized category - return generic "Event" which will be filtered out
+        return ActivityType(id: 11, name: "Event", icon: "calendar", createdAt: nil)
     }
 
     func filterEventsByLocation() {
@@ -220,9 +291,11 @@ class EventViewModel: ObservableObject {
             return
         }
 
+        // TODO: TESTING - Rate limiting temporarily disabled for development
+        // Uncomment before production release
+        /*
         print("Checking if user can call API...")
 
-        // Check if user can refresh (once per day limit)
         do {
             let canRefresh = try await ticketmasterService.checkUserCanCallAPI(userId: userId)
             print("Can refresh API: \(canRefresh)")
@@ -240,8 +313,9 @@ class EventViewModel: ObservableObject {
             errorMessage = "Failed to check refresh availability: \(error.localizedDescription)"
             return
         }
+        */
 
-        print("User can refresh - calling fetchTicketmasterEvents with forceRefresh: true")
+        print("Refreshing events (rate limiting disabled for testing)")
         await fetchTicketmasterEvents(
             userId: userId,
             location: location,

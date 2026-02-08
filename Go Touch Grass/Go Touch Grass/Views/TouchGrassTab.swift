@@ -246,14 +246,17 @@ struct LocalEventRowView: View {
                     .foregroundColor(.white.opacity(0.8))
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    HStack(spacing: 6) {
-                        Image(systemName: "person.2.fill")
-                            .font(.caption)
-                        Text("\(event.attendeeCount) attending")
-                            .font(.caption)
+                    // Only show attendee count if >= 5
+                    if event.attendeeCount >= 5 {
+                        HStack(spacing: 6) {
+                            Image(systemName: "person.2.fill")
+                                .font(.caption)
+                            Text("\(event.attendeeCount) attending")
+                                .font(.caption)
+                        }
+                        .foregroundColor(.white.opacity(0.8))
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .foregroundColor(.white.opacity(0.8))
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .padding(12)
@@ -391,14 +394,17 @@ struct LocalEventDetailView: View {
 
                             Spacer()
 
-                            VStack(alignment: .trailing, spacing: 4) {
-                                Text("Attending")
-                                    .font(.caption)
-                                    .foregroundColor(colors.secondaryText)
-                                Text("\(event.attendeeCount) people")
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(colors.primaryText)
+                            // Only show attendee count if >= 5
+                            if event.attendeeCount >= 5 {
+                                VStack(alignment: .trailing, spacing: 4) {
+                                    Text("Attending")
+                                        .font(.caption)
+                                        .foregroundColor(colors.secondaryText)
+                                    Text("\(event.attendeeCount) people")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(colors.primaryText)
+                                }
                             }
                         }
                         .padding()
