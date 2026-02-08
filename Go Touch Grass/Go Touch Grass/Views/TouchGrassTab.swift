@@ -165,6 +165,10 @@ struct TouchGrassTab: View {
                     await viewModel.loadEvents()
                 }
             }
+            .onAppear {
+                // Request user's location on first appear
+                viewModel.requestUserLocation()
+            }
         }
     }
 }

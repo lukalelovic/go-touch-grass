@@ -26,22 +26,59 @@ class EventViewModel: ObservableObject {
     private let radiusMiles: Double = 50
     private let ticketmasterService = TicketmasterService.shared
     private let supabaseManager = SupabaseManager()
+    private let locationManager = LocationManager.shared
 
     init() {
         // Don't auto-load events on init - wait for location selection
+        setupLocationObserver()
+    }
+
+    private func setupLocationObserver() {
+        // Observe location changes and auto-populate selectedLocation
+        Task { @MainActor in
+            // Use Combine to observe location changes
+            for await location in locationManager.$currentLocation.values {
+                if let location = location, selectedLocation == nil {
+                    // Auto-populate with user's current location
+                    await setLocationFromCoordinates(location, city: locationManager.currentCity)
+                    break // Only set once on initial load
+                }
+            }
+        }
+    }
+
+    private func setLocationFromCoordinates(_ coordinate: CLLocationCoordinate2D, city: String?) async {
+        // Create a Location object from coordinates
+        let location = Location(
+            latitude: coordinate.latitude,
+            longitude: coordinate.longitude,
+            name: city ?? "Current Location"
+        )
+
+        selectedLocation = location
+        print("🌍 Auto-populated location from device:")
+        print("   City: \(location.name ?? "Unknown")")
+        print("   Coordinates: lat=\(location.latitude), long=\(location.longitude)")
     }
 
     // MARK: - Public Methods
+
+    func requestUserLocation() {
+        // Request location permission and start location updates
+        print("Requesting user location...")
+        locationManager.requestLocationPermission()
+        locationManager.requestLocation()
+    }
 
     func loadEvents() async {
         print("loadEvents called - selectedLocation: \(selectedLocation?.name ?? "nil")")
 
         // Fetch Ticketmaster events if user is logged in
         guard let userId = supabaseManager.currentUser?.id else {
-            // Show sample events only if not logged in
-            print("No user logged in - showing sample events")
-            events = LocalEvent.sampleEvents
-            filteredEvents = events
+            // No events if not logged in
+            print("No user logged in - clearing events")
+            events = []
+            filteredEvents = []
             return
         }
 
@@ -100,6 +137,9 @@ class EventViewModel: ObservableObject {
         forceRefresh: Bool = false
     ) async {
         print("fetchTicketmasterEvents called - userId: \(userId), location: \(location.name ?? "Unknown"), forceRefresh: \(forceRefresh)")
+        print("📍 Retrieving events for city: \(location.name ?? "Unknown Location")")
+        print("📍 Coordinates: lat=\(location.latitude), long=\(location.longitude)")
+        print("📍 Search radius: \(radiusMiles) miles")
 
         isLoading = true
         errorMessage = nil
