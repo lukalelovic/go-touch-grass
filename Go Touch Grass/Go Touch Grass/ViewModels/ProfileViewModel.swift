@@ -30,7 +30,6 @@ class ProfileViewModel: ObservableObject {
 
     // Event attendance tracking
     @Published var attendedEventsCount: Int = 0
-    @Published var attendedEvents: [TicketmasterEvent] = []
 
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -42,7 +41,7 @@ class ProfileViewModel: ObservableObject {
 
     init(activityStore: ActivityStore = .shared, supabaseManager: SupabaseManager? = nil) {
         self.activityStore = activityStore
-        self.supabaseManager = supabaseManager ?? SupabaseManager()
+        self.supabaseManager = supabaseManager ?? SupabaseManager.shared
         setupBindings()
     }
 
@@ -296,17 +295,4 @@ class ProfileViewModel: ObservableObject {
         return formatter.string(from: date)
     }
 
-    // MARK: - Event Attendance Methods
-
-    func fetchAttendedEvents() async {
-        guard let userId = currentUser?.id else { return }
-
-        do {
-            attendedEvents = try await ticketmasterService.fetchAttendedEvents(userId: userId)
-            attendedEventsCount = attendedEvents.count
-        } catch {
-            print("Error fetching attended events: \(error)")
-            errorMessage = "Failed to load attended events"
-        }
-    }
 }

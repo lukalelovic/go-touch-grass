@@ -15,7 +15,7 @@ struct UserSearchView: View {
     @State private var errorMessage: String?
     @State private var showDebugAlert = false
     @EnvironmentObject var themeManager: ThemeManager
-    @StateObject private var supabaseManager = SupabaseManager()
+    private let supabaseManager = SupabaseManager.shared
 
     var body: some View {
         let colors = AppColors(isDarkMode: themeManager.isDarkMode)

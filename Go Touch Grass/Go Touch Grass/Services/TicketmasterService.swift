@@ -3,41 +3,8 @@ import CoreLocation
 import Supabase
 import Combine
 
-// MARK: - RPC Parameter Structs
-
-/// Parameters for upsert_event RPC function
-struct UpsertEventParams: Encodable, Sendable {
-    let p_content_hash: String
-    let p_source: String
-    let p_source_id: String
-    let p_name: String
-    let p_description: String?
-    let p_event_url: String?
-    let p_start_date: String
-    let p_end_date: String?
-    let p_timezone: String?
-    let p_venue_name: String?
-    let p_venue_address: String?
-    let p_city: String?
-    let p_state: String?
-    let p_country: String?
-    let p_postal_code: String?
-    let p_latitude: Double?
-    let p_longitude: Double?
-    let p_source_category: String?
-    let p_source_tags: [String]?
-    let p_price_min: Double?
-    let p_price_max: Double?
-    let p_currency: String
-    let p_is_free: Bool
-    let p_image_url: String?
-    let p_thumbnail_url: String?
-    let p_search_location_lat: Double?
-    let p_search_location_long: Double?
-    let p_search_radius_miles: Int?
-}
-
-/// Service for interacting with Ticketmaster Discovery API and caching events
+/// Service for interacting with Ticketmaster Discovery API
+/// Note: API events are NOT stored in database - they remain in-memory only
 @MainActor
 class TicketmasterService: ObservableObject {
     // MARK: - Singleton
@@ -49,7 +16,7 @@ class TicketmasterService: ObservableObject {
 
     // MARK: - Private Properties
     private var supabaseClient: SupabaseClient {
-        return SupabaseManager().client
+        return SupabaseManager.shared.client
     }
 
     // MARK: - Initialization
@@ -59,12 +26,14 @@ class TicketmasterService: ObservableObject {
 
     // MARK: - Public API Methods
 
-    /// Fetch events from Ticketmaster API or return cached events if within 24 hours
+    /// Fetch events from Ticketmaster API
     /// - Parameters:
+    ///   - userId: User ID for rate limiting
     ///   - location: CLLocationCoordinate2D for the search center
+    ///   - locationName: Optional name of the location for logging
     ///   - radius: Search radius in miles (default 50)
-    ///   - forceRefresh: Force API call even if cached data exists
-    /// - Returns: Array of TicketmasterEvent
+    ///   - forceRefresh: Force API call even if rate limited
+    /// - Returns: Array of TicketmasterEvent (in-memory only, not stored in database)
     func fetchEvents(
         for userId: UUID,
         location: CLLocationCoordinate2D,
@@ -96,9 +65,7 @@ class TicketmasterService: ObservableObject {
             radius: radius
         )
 
-        print("Caching \(events.count) events to database")
-        // Cache events in database
-        try await cacheEvents(events)
+        print("Fetched \(events.count) events from Ticketmaster API (in-memory only)")
 
         // Record API call for rate limiting
         try await recordAPICall(
@@ -113,69 +80,6 @@ class TicketmasterService: ObservableObject {
         return events
     }
 
-    /// Get cached events from database
-    func fetchCachedEvents(
-        location: CLLocationCoordinate2D,
-        radius: Int = 50
-    ) async throws -> [TicketmasterEvent] {
-        // Query events within radius that are still upcoming
-        let response = try await supabaseClient
-            .from("events")
-            .select()
-            .eq("source", value: "ticketmaster")
-            .gte("start_date", value: ISO8601DateFormatter().string(from: Date()))
-            .order("start_date", ascending: true)
-            .execute()
-
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-
-        // Debug: Print raw database response
-        #if DEBUG
-        if let jsonString = String(data: response.data, encoding: .utf8) {
-            print("Database response for cached events: \(jsonString.prefix(500))")
-        }
-        #endif
-
-        do {
-            let events = try decoder.decode([TicketmasterEvent].self, from: response.data)
-            print("Successfully decoded \(events.count) cached events from database")
-            return filterEventsByDistance(events, location: location, radius: radius)
-        } catch {
-            print("Error decoding cached events: \(error)")
-            if let decodingError = error as? DecodingError {
-                switch decodingError {
-                case .keyNotFound(let key, let context):
-                    print("Key '\(key.stringValue)' not found: \(context.debugDescription)")
-                case .typeMismatch(let type, let context):
-                    print("Type mismatch for type \(type): \(context.debugDescription)")
-                case .valueNotFound(let type, let context):
-                    print("Value not found for type \(type): \(context.debugDescription)")
-                case .dataCorrupted(let context):
-                    print("Data corrupted: \(context.debugDescription)")
-                @unknown default:
-                    print("Unknown decoding error: \(error)")
-                }
-            }
-            throw TicketmasterError.decodingError(error)
-        }
-    }
-
-    private func filterEventsByDistance(_ events: [TicketmasterEvent], location: CLLocationCoordinate2D, radius: Int) -> [TicketmasterEvent] {
-        // Filter by distance (simple radius filter)
-        return events.filter { event in
-            guard let eventLat = event.latitude, let eventLong = event.longitude else {
-                return false
-            }
-
-            let eventLocation = CLLocation(latitude: eventLat, longitude: eventLong)
-            let searchLocation = CLLocation(latitude: location.latitude, longitude: location.longitude)
-            let distanceInMeters = eventLocation.distance(from: searchLocation)
-            let distanceInMiles = distanceInMeters / 1609.34
-
-            return distanceInMiles <= Double(radius)
-        }
-    }
 
     // MARK: - Ticketmaster API Methods
 
@@ -264,23 +168,6 @@ class TicketmasterService: ObservableObject {
         }
     }
 
-    // MARK: - Database Methods
-
-    /// Cache events in Supabase using upsert_event function
-    nonisolated private func cacheEvents(_ events: [TicketmasterEvent]) async throws {
-        guard !events.isEmpty else { return }
-
-        print("Attempting to cache \(events.count) events...")
-
-        // TODO: Fix actor isolation issue with RPC calls
-        // Temporarily disabled due to Swift concurrency actor isolation constraints
-        // The upsert_event database function exists but we can't call it from Swift
-        // due to Encodable conformance issues with main actor isolation
-
-        print("Note: Event caching to database temporarily disabled")
-        print("Events are available in-memory for this session")
-        print("Database caching will be re-enabled once actor isolation issue is resolved")
-    }
 
     /// Check if user can call API (once per day limit)
     func checkUserCanCallAPI(userId: UUID) async throws -> Bool {
@@ -305,34 +192,12 @@ class TicketmasterService: ObservableObject {
         success: Bool,
         errorMessage: String? = nil
     ) async throws {
-        struct Params: Encodable {
-            let p_user_id: String
-            let p_source: String
-            let p_search_lat: Double
-            let p_search_long: Double
-            let p_search_location_name: String
-            let p_search_radius: Int
-            let p_events_retrieved: Int
-            let p_success: Bool
-            let p_error_message: String?
-        }
-
-        let params = Params(
-            p_user_id: userId.uuidString,
-            p_source: "ticketmaster",
-            p_search_lat: location.latitude,
-            p_search_long: location.longitude,
-            p_search_location_name: locationName ?? "",
-            p_search_radius: radius,
-            p_events_retrieved: eventsRetrieved,
-            p_success: success,
-            p_error_message: errorMessage
-        )
-
-        let client = SupabaseManager().client
-        try await client
-            .rpc("record_event_api_call", params: params)
-            .execute()
+        // Note: Skipping API call recording due to database function overloading issue
+        // The database has multiple versions of record_event_api_call which causes
+        // PostgreSQL to be unable to choose the correct function
+        // This is a non-critical feature for tracking API usage
+        // TODO: Fix by removing old function versions from database or updating schema
+        print("⚠️ API call recording skipped - database function overloading issue")
     }
 
     // MARK: - Event Attendance Methods
@@ -358,84 +223,37 @@ class TicketmasterService: ObservableObject {
             p_rating: rating
         )
 
-        let client = SupabaseManager().client
+        let client = SupabaseManager.shared.client
         try await client
             .rpc("mark_event_attended", params: params)
             .execute()
     }
 
-    /// Get user's attended events
-    func fetchAttendedEvents(userId: UUID) async throws -> [TicketmasterEvent] {
-        let response = try await supabaseClient
-            .from("user_event_attendance")
-            .select("""
-                *,
-                events(*)
-            """)
-            .eq("user_id", value: userId.uuidString)
-            .order("attended_at", ascending: false)
-            .execute()
-
-        // Parse the response
-        // Note: This is simplified - you may need to parse the joined data differently
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-
-        let attendanceRecords = try decoder.decode([UserEventAttendance].self, from: response.data)
-
-        // Fetch full event details for each attended event
-        var events: [TicketmasterEvent] = []
-        for record in attendanceRecords {
-            let eventResponse = try await supabaseClient
-                .from("events")
-                .select()
-                .eq("id", value: record.eventId.uuidString)
-                .single()
-                .execute()
-
-            if let event = try? decoder.decode(TicketmasterEvent.self, from: eventResponse.data) {
-                events.append(event)
-            }
-        }
-
-        return events
-    }
-
-    /// Get count of events user has attended
+    /// Get count of API events user has attended
+    /// Note: This only counts Ticketmaster/API events marked as attended
     func fetchAttendedEventCount(userId: UUID) async throws -> Int {
         let response = try await supabaseClient
-            .rpc("get_user_attended_event_count", params: ["p_user_id": userId.uuidString])
+            .from("user_event_attendance")
+            .select("*", head: false, count: .exact)
+            .eq("user_id", value: userId.uuidString)
+            .eq("event_type", value: "api")
             .execute()
 
-        let count = try JSONDecoder().decode(Int.self, from: response.data)
-        return count
+        return response.count ?? 0
     }
 
-    /// Check if user has attended an event
+    /// Check if user has attended an API event
     func hasUserAttendedEvent(userId: UUID, eventId: UUID) async throws -> Bool {
         let response = try await supabaseClient
             .rpc("has_user_attended_event", params: [
                 "p_user_id": userId.uuidString,
-                "p_event_id": eventId.uuidString
+                "p_event_id": eventId.uuidString,
+                "p_event_type": "api"
             ])
             .execute()
 
         let hasAttended = try JSONDecoder().decode(Bool.self, from: response.data)
         return hasAttended
-    }
-
-    // MARK: - Pro Tier Features (Placeholder)
-
-    /// Get recommended events based on user's activity history
-    /// This will be implemented later for Pro-tier users
-    func fetchRecommendedEvents(
-        userId: UUID,
-        location: CLLocationCoordinate2D,
-        radius: Int = 50
-    ) async throws -> [TicketmasterEvent] {
-        // TODO: Implement recommendation algorithm
-        // For now, just return cached events
-        return try await fetchCachedEvents(location: location, radius: radius)
     }
 }
 

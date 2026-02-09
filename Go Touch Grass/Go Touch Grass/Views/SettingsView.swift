@@ -256,7 +256,7 @@ struct ShareSheet: UIViewControllerRepresentable {
 #Preview {
     NavigationStack {
         SettingsView()
-            .environmentObject(SupabaseManager())
+            .environmentObject(SupabaseManager.shared)
             .environmentObject(ThemeManager.shared)
     }
 }

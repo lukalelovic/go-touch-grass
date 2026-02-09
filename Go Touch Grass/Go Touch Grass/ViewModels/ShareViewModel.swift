@@ -26,7 +26,7 @@ class ShareViewModel: ObservableObject {
 
     init(activityStore: ActivityStore = .shared, supabaseManager: SupabaseManager? = nil) {
         self.activityStore = activityStore
-        self.supabaseManager = supabaseManager ?? SupabaseManager()
+        self.supabaseManager = supabaseManager ?? SupabaseManager.shared
     }
 
     func updateSupabaseManager(_ manager: SupabaseManager) {

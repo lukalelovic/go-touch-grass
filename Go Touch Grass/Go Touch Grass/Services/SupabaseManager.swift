@@ -41,7 +41,8 @@ struct UpdateProfilePictureResponse: Codable, Sendable {
 }
 
 class SupabaseManager: ObservableObject {
-    
+    // Singleton instance
+    static let shared = SupabaseManager()
 
     let client: SupabaseClient
 

@@ -83,6 +83,6 @@ extension UIView {
 
 #Preview {
     ContentView()
-        .environmentObject(SupabaseManager())
+        .environmentObject(SupabaseManager.shared)
         .environmentObject(ThemeManager.shared)
 }

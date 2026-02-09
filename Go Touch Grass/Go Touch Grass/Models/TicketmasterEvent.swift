@@ -40,7 +40,6 @@ struct TicketmasterEvent: Identifiable, Codable {
     let isFree: Bool?
 
     // Images
-    let imageUrl: String?
     let thumbnailUrl: String?
 
     // Metadata for caching
@@ -117,7 +116,6 @@ struct TicketmasterEvent: Identifiable, Codable {
         case priceMax = "price_max"
         case currency
         case isFree = "is_free"
-        case imageUrl = "image_url"
         case thumbnailUrl = "thumbnail_url"
         case retrievedAt = "retrieved_at"
         case searchLocationLat = "search_location_lat"
@@ -264,10 +262,8 @@ struct TicketmasterAPIEvent: Codable {
         let currency = priceRange?.currency
         let isFree = (priceMin == nil || priceMin == 0) && (priceMax == nil || priceMax == 0)
 
-        // Get images
-        let sortedImages = images?.sorted { ($0.width ?? 0) > ($1.width ?? 0) }
-        let imageUrl = sortedImages?.first?.url
-        let thumbnailUrl = sortedImages?.last?.url
+        // Get thumbnail image
+        let thumbnailUrl = images?.first?.url
 
         // Get category and genre
         let category = classifications?.first?.segment?.name
@@ -304,7 +300,6 @@ struct TicketmasterAPIEvent: Codable {
             priceMax: priceMax,
             currency: currency,
             isFree: isFree,
-            imageUrl: imageUrl,
             thumbnailUrl: thumbnailUrl,
             retrievedAt: Date(),
             searchLocationLat: searchLocation?.latitude,

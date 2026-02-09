@@ -11,6 +11,7 @@ import MapKit
 struct TouchGrassTab: View {
     @StateObject private var viewModel = EventViewModel()
     @EnvironmentObject var themeManager: ThemeManager
+    @State private var showingCreateEvent = false
 
     var body: some View {
         let colors = AppColors(isDarkMode: themeManager.isDarkMode)
@@ -133,11 +134,42 @@ struct TouchGrassTab: View {
                     } else {
                         ScrollView {
                             LazyVStack(spacing: 12) {
-                                ForEach(viewModel.filteredEvents) { event in
-                                    NavigationLink(destination: LocalEventDetailView(event: event, viewModel: viewModel, themeManager: themeManager)) {
-                                        LocalEventRowView(event: event)
+                                // Community Events Section
+                                let communityEvents = viewModel.filteredEvents.filter { $0.isUserGenerated }
+                                if !communityEvents.isEmpty {
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        Text("Community Events")
+                                            .font(.headline)
+                                            .foregroundColor(colors.primaryText)
+                                            .padding(.horizontal)
+                                            .padding(.top, 8)
+
+                                        ForEach(communityEvents) { event in
+                                            NavigationLink(destination: LocalEventDetailView(event: event, viewModel: viewModel, themeManager: themeManager)) {
+                                                LocalEventRowView(event: event)
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
+                                        }
                                     }
-                                    .buttonStyle(PlainButtonStyle())
+                                }
+
+                                // Ticketmaster Events Section
+                                let apiEvents = viewModel.filteredEvents.filter { !$0.isUserGenerated }
+                                if !apiEvents.isEmpty {
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        Text("Nearby Events")
+                                            .font(.headline)
+                                            .foregroundColor(colors.primaryText)
+                                            .padding(.horizontal)
+                                            .padding(.top, communityEvents.isEmpty ? 8 : 16)
+
+                                        ForEach(apiEvents) { event in
+                                            NavigationLink(destination: LocalEventDetailView(event: event, viewModel: viewModel, themeManager: themeManager)) {
+                                                LocalEventRowView(event: event)
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
+                                        }
+                                    }
                                 }
                             }
                             .padding()
@@ -152,8 +184,37 @@ struct TouchGrassTab: View {
             .toolbarBackground(colors.primaryBackground, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(themeManager.isDarkMode ? .dark : .light, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        viewModel.showFilters = true
+                    } label: {
+                        Label("Filters", systemImage: "line.3.horizontal.decrease.circle")
+                    }
+                }
+
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showingCreateEvent = true
+                    } label: {
+                        Label("Start Event", systemImage: "plus.circle.fill")
+                    }
+                }
+            }
             .sheet(isPresented: $viewModel.showLocationPicker) {
                 LocationPickerView(selectedLocation: $viewModel.selectedLocation)
+            }
+            .sheet(isPresented: $showingCreateEvent) {
+                CreateEventView()
+                    .onDisappear {
+                        // Refresh events after creating a new one
+                        Task {
+                            await viewModel.refreshEvents()
+                        }
+                    }
+            }
+            .sheet(isPresented: $viewModel.showFilters) {
+                EventFiltersView(viewModel: viewModel)
             }
             .alert("Daily Limit Reached", isPresented: $viewModel.showRateLimitAlert) {
                 Button("OK", role: .cancel) { }
@@ -451,5 +512,92 @@ struct LocalEventDetailView: View {
         formatter.dateStyle = .full
         formatter.timeStyle = .short
         return formatter.string(from: date)
+    }
+}
+
+// MARK: - Event Filters View
+struct EventFiltersView: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var viewModel: EventViewModel
+    @EnvironmentObject var themeManager: ThemeManager
+
+    var body: some View {
+        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+
+        NavigationView {
+            Form {
+                // Radius Filter
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Search Radius")
+                                .foregroundColor(colors.primaryText)
+                            Spacer()
+                            Text("\(Int(viewModel.radiusMiles)) miles")
+                                .foregroundColor(colors.secondaryText)
+                        }
+
+                        Slider(value: $viewModel.radiusMiles, in: 10...150, step: 5)
+                            .accentColor(colors.accent)
+                    }
+                } header: {
+                    Text("Distance")
+                } footer: {
+                    Text("Events within this radius from your selected location will be shown")
+                        .foregroundColor(colors.secondaryText)
+                }
+
+                // Event Type Filter
+                Section {
+                    Picker("Event Type", selection: $viewModel.selectedEventType) {
+                        Text("All Types").tag(nil as ActivityType?)
+                        ForEach(viewModel.availableActivityTypes, id: \.id) { type in
+                            HStack {
+                                if let icon = type.icon {
+                                    Image(systemName: icon)
+                                }
+                                Text(type.name)
+                            }
+                            .tag(type as ActivityType?)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                } header: {
+                    Text("Activity Type")
+                } footer: {
+                    Text("Filter events by activity type")
+                        .foregroundColor(colors.secondaryText)
+                }
+
+                // Results Summary
+                Section {
+                    HStack {
+                        Text("Matching Events")
+                            .foregroundColor(colors.primaryText)
+                        Spacer()
+                        Text("\(viewModel.filteredEvents.count)")
+                            .foregroundColor(colors.accent)
+                            .fontWeight(.semibold)
+                    }
+                }
+            }
+            .navigationTitle("Filters")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Reset") {
+                        viewModel.radiusMiles = 50
+                        viewModel.selectedEventType = nil
+                    }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+            .background(colors.primaryBackground)
+        }
     }
 }

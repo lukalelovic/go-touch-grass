@@ -16,6 +16,7 @@ class EventViewModel: ObservableObject {
     @Published var showLocationPicker = false
     @Published var events: [LocalEvent] = []
     @Published var ticketmasterEvents: [TicketmasterEvent] = []
+    @Published var userEvents: [UserEvent] = []
     @Published var filteredEvents: [LocalEvent] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -23,9 +24,40 @@ class EventViewModel: ObservableObject {
     @Published var lastAPICallTime: Date?
     @Published var showRateLimitAlert = false
 
-    private let radiusMiles: Double = 50
+    // Filter controls
+    @Published var radiusMiles: Double = 50
+    @Published var selectedEventType: ActivityType? = nil {
+        didSet {
+            applyFilters()
+        }
+    }
+    @Published var showFilters = false
+
+    // Computed property to get unique activity types from current events
+    var availableActivityTypes: [ActivityType] {
+        let types = Set(events.map { $0.eventType })
+        return Array(types).sorted { $0.name < $1.name }
+    }
+
+    // Debounce radius changes to avoid excessive reloads
+    private var radiusUpdateTask: Task<Void, Never>?
+
+    func updateRadius(_ newRadius: Double) {
+        radiusMiles = newRadius
+
+        // Cancel previous task
+        radiusUpdateTask?.cancel()
+
+        // Debounce: only reload after user stops dragging for 0.5 seconds
+        radiusUpdateTask = Task {
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+            guard !Task.isCancelled else { return }
+            await refreshEventsWithNewRadius()
+        }
+    }
     private let ticketmasterService = TicketmasterService.shared
-    private let supabaseManager = SupabaseManager()
+    private let userEventService = UserEventService.shared
+    private let supabaseManager = SupabaseManager.shared
     private let locationManager = LocationManager.shared
 
     init() {
@@ -73,7 +105,7 @@ class EventViewModel: ObservableObject {
     func loadEvents() async {
         print("loadEvents called - selectedLocation: \(selectedLocation?.name ?? "nil")")
 
-        // Fetch Ticketmaster events if user is logged in
+        // Fetch both Ticketmaster and user-generated events if user is logged in
         guard let userId = supabaseManager.currentUser?.id else {
             // No events if not logged in
             print("No user logged in - clearing events")
@@ -90,46 +122,119 @@ class EventViewModel: ObservableObject {
         }
 
         print("User logged in (\(userId)), fetching events for location")
-        await fetchTicketmasterEvents(
-            userId: userId,
-            location: location,
-            forceRefresh: false
-        )
+
+        // Fetch both API events and user events concurrently
+        async let ticketmaster = fetchTicketmasterEventsAsync(userId: userId, location: location, forceRefresh: false)
+        async let userGenerated = fetchUserEventsAsync(location: location)
+
+        await ticketmaster
+        await userGenerated
+
+        // Combine and sort all events
+        combineAndSortEvents()
     }
 
-    func loadCachedEvents() async {
-        // Load any cached events from the database
-        guard let location = selectedLocation else { return }
+    private func fetchTicketmasterEventsAsync(userId: UUID, location: Location, forceRefresh: Bool) async {
+        await fetchTicketmasterEvents(userId: userId, location: location, forceRefresh: forceRefresh)
+    }
 
-        isLoading = true
-        defer { isLoading = false }
-
+    private func fetchUserEventsAsync(location: Location) async {
         do {
-            let clLocation = CLLocationCoordinate2D(
-                latitude: location.latitude,
-                longitude: location.longitude
-            )
-
-            ticketmasterEvents = try await ticketmasterService.fetchCachedEvents(
-                location: clLocation,
-                radius: Int(radiusMiles)
-            )
-
-            print("Loaded \(ticketmasterEvents.count) cached events for location")
-
-            // Convert to LocalEvent for display (backward compatibility)
-            convertTicketmasterToLocalEvents()
-
-            // If no cached events were found, show a helpful message
-            if ticketmasterEvents.isEmpty {
-                print("No cached events found for this location")
-                errorMessage = "No cached events available for this location. You've reached your daily search limit. Try again tomorrow!"
-            }
+            let clLocation = CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude)
+            print("🔍 Searching for user events near \(location.name ?? "Unknown") at coordinates (\(location.latitude), \(location.longitude)) within \(radiusMiles) miles")
+            userEvents = try await userEventService.fetchNearbyPublicEvents(location: clLocation, radius: radiusMiles)
+            print("📍 Fetched \(userEvents.count) user-generated events")
         } catch {
-            print("Failed to load cached events: \(error)")
-            errorMessage = "Failed to load cached events: \(error.localizedDescription)"
+            print("Error fetching user events: \(error)")
+            // Don't fail the whole load if user events fail
+            userEvents = []
         }
     }
+
+    private func combineAndSortEvents() {
+        // Convert Ticketmaster events using existing conversion method
+        convertTicketmasterToLocalEvents()
+
+        // Add user events as LocalEvent
+        let userLocalEvents = userEvents.compactMap { userEvent -> LocalEvent? in
+            let location = Location(
+                latitude: userEvent.latitude,
+                longitude: userEvent.longitude,
+                name: userEvent.venueName ?? userEvent.city
+            )
+
+            // Map activity type ID to ActivityType
+            let activityType = mapUserEventActivityType(userEvent.activityTypeId)
+
+            return LocalEvent(
+                id: userEvent.id,
+                title: userEvent.name,
+                description: userEvent.description,
+                eventType: activityType,
+                location: location,
+                date: userEvent.startDate,
+                imageURL: nil,
+                organizerName: "Community Event", // Could fetch creator name from users table
+                attendeeCount: 0, // Could fetch from user_event_joins if needed
+                isUserGenerated: true
+            )
+        }
+
+        // Combine all events
+        var allLocalEvents = events // Ticketmaster events already converted (isUserGenerated = false)
+        allLocalEvents.append(contentsOf: userLocalEvents)
+
+        // Filter out past events (only show upcoming events)
+        let now = Date()
+        let upcomingEvents = allLocalEvents.filter { $0.date > now }
+
+        // Sort: user-generated events first, then by date (soonest first)
+        let sortedEvents = upcomingEvents.sorted { event1, event2 in
+            // If one is user-generated and the other isn't, user-generated comes first
+            if event1.isUserGenerated != event2.isUserGenerated {
+                return event1.isUserGenerated
+            }
+            // Otherwise, sort by soonest date
+            return event1.date < event2.date
+        }
+
+        events = sortedEvents
+
+        print("📊 Combined events: \(userLocalEvents.count) community + \(ticketmasterEvents.count) Ticketmaster = \(sortedEvents.count) upcoming events")
+
+        // Apply filters
+        applyFilters()
+    }
+
+    private func applyFilters() {
+        var filtered = events
+
+        // Filter by event type if selected
+        if let eventType = selectedEventType {
+            filtered = filtered.filter { $0.eventType == eventType }
+        }
+
+        // Note: Radius filtering is already applied during fetch in UserEventService
+        // and TicketmasterService, so we don't need to re-filter here
+
+        filteredEvents = filtered
+        print("🔍 Applied filters: \(filtered.count) events match criteria (type: \(selectedEventType?.rawValue ?? "all"))")
+    }
+
+    private func mapUserEventActivityType(_ activityTypeId: Int) -> ActivityType {
+        // Map database activity type IDs to ActivityType
+        switch activityTypeId {
+        case 1: return ActivityType(id: 1, name: "Running", icon: "figure.run", createdAt: nil)
+        case 2: return ActivityType(id: 2, name: "Walking", icon: "figure.walk", createdAt: nil)
+        case 3: return ActivityType(id: 3, name: "Hiking", icon: "figure.hiking", createdAt: nil)
+        case 4: return ActivityType(id: 4, name: "Biking", icon: "bicycle", createdAt: nil)
+        case 5: return ActivityType(id: 5, name: "Kayaking", icon: "figure.outdoor.cycle", createdAt: nil)
+        case 6: return ActivityType(id: 6, name: "Climbing", icon: "figure.climbing", createdAt: nil)
+        case 7: return ActivityType(id: 7, name: "Swimming", icon: "figure.pool.swim", createdAt: nil)
+        default: return ActivityType(id: 8, name: "Other", icon: "star.fill", createdAt: nil)
+        }
+    }
+
 
     func fetchTicketmasterEvents(
         userId: UUID,
@@ -159,10 +264,10 @@ class EventViewModel: ObservableObject {
                 print("Pre-check: Can call API: \(canCallAPI)")
 
                 if !canCallAPI {
-                    print("Rate limited - showing alert and loading any cached events")
+                    print("Rate limited - showing alert")
                     showRateLimitAlert = true
-                    // Try to load cached events, but don't fail if there aren't any
-                    await loadCachedEvents()
+                    // No cached events available - API events are in-memory only
+                    errorMessage = "You've reached your daily API limit. Try again tomorrow!"
                     return
                 }
             }
@@ -185,13 +290,10 @@ class EventViewModel: ObservableObject {
         } catch TicketmasterError.rateLimitExceeded {
             print("Rate limit exceeded (from service) - showing alert")
             showRateLimitAlert = true
-            // Load cached events instead
-            await loadCachedEvents()
+            errorMessage = "You've reached your daily API limit. Try again tomorrow!"
         } catch {
             print("Error fetching events: \(error)")
             errorMessage = "Failed to fetch events: \(error.localizedDescription)"
-            // Fallback to cached events
-            await loadCachedEvents()
         }
     }
 
@@ -239,9 +341,10 @@ class EventViewModel: ObservableObject {
                 eventType: activityType,
                 location: location,
                 date: ticketmasterEvent.startDate,
-                imageURL: ticketmasterEvent.imageUrl,
+                imageURL: ticketmasterEvent.thumbnailUrl,
                 organizerName: ticketmasterEvent.venueName ?? "Unknown Organizer",
-                attendeeCount: 0 // We can fetch this from attendance table if needed
+                attendeeCount: 0, // We can fetch this from attendance table if needed
+                isUserGenerated: false
             )
         }
 
@@ -322,6 +425,14 @@ class EventViewModel: ObservableObject {
         }
     }
 
+    func refreshEventsWithNewRadius() async {
+        // Reload events when radius changes (without API rate limit check)
+        guard let location = selectedLocation else {
+            return
+        }
+        await loadEvents()
+    }
+
     func refreshEvents() async {
         print("refreshEvents called")
 
@@ -344,8 +455,7 @@ class EventViewModel: ObservableObject {
                 print("Setting showRateLimitAlert to true")
                 showRateLimitAlert = true
                 print("showRateLimitAlert is now: \(showRateLimitAlert)")
-                // Load cached events
-                await loadCachedEvents()
+                errorMessage = "You've reached your daily API limit. Try again tomorrow!"
                 return
             }
         } catch {
@@ -393,16 +503,11 @@ class EventViewModel: ObservableObject {
     // MARK: - Event Attendance Methods
 
     func fetchAttendedEvents() async -> [TicketmasterEvent] {
-        guard let userId = supabaseManager.currentUser?.id else {
-            return []
-        }
-
-        do {
-            return try await ticketmasterService.fetchAttendedEvents(userId: userId)
-        } catch {
-            errorMessage = "Failed to fetch attended events: \(error.localizedDescription)"
-            return []
-        }
+        // Note: Since API events are no longer cached in database,
+        // we can't fetch full attended event details anymore
+        // This would need to be refactored to store minimal info
+        // or removed entirely
+        return []
     }
 
     func fetchAttendedEventCount() async -> Int {

@@ -190,19 +190,34 @@ Goal: Replace fake data with real persistence
 - [x] Create Ticketmaster API config file (similar to SupabaseConfig.swift pattern)
 - [x] Create TicketmasterService to handle API connection and requests
 - [x] Implement event search by location (lat/long or postal code)
-- [ ] Use iOS location to suggest search with current location
+- [x] Use iOS location to suggest search with current location
 - [x] Parse Ticketmaster API response into local Event model
-- [x] Create database table for cached events with `retrieved_at` timestamp
+- [x] Remove image_url field (keeping only thumbnail_url for optimization)
 - [x] Implement per-user rate limiting (max 1 API call per day per user)
 - [x] Store last API call timestamp per user in database
-- [x] Save retrieved events to database with location and retrieval metadata
-- [x] Display cached events from database in Touch Grass screen, replacing static data
-- [x] Implement logic to refresh events only when >24 hours since last retrieval
 - [x] Add event attendance tracking (many-to-many relationship between users and events)
 - [x] Display attended event count on user profile
 - [ ] Show list of attended events on user profile (with dates)
 - [ ] Pro-tier: Implement enhanced event recommendations based on user's activity history
 - [ ] Pro-tier: Create custom algorithm to match events with user preferences and badge levels
+
+#### User-Generated Community Events
+- [x] Create UserEvent model for community events
+- [x] Create UserEventService to manage event creation, joining, and cancellation
+- [x] Build CreateEventView form for users to create events
+- [x] Add "Start Event" button to Touch Grass tab
+- [x] Integrate community events with Ticketmaster events in EventViewModel
+- [x] Filter out past events and sort by soonest start date
+- [x] Remove event_url field from user event creation
+- [x] Remove image_url field from UserEvent model
+- [ ] **SECURITY: Add rate limiting for event creation (max 1-2 events per day per user)**
+- [ ] **SECURITY: Create database function to check today's event creation count**
+- [ ] **SECURITY: Update UI to show rate limit alert when limit is reached**
+- [ ] Add event reporting/flagging system for inappropriate evebts
+- [ ] Implement event moderation (keyword filtering)
+- [ ] Limit event creation to good-standing users
+- [ ] Add account age requirement for creating events (e.g., 7 days)
+- [ ] Consider manual approval system for first-time event creators
 
 ### Phase 5 - App Rollout
 

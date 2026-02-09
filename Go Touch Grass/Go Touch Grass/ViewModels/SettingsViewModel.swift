@@ -42,7 +42,7 @@ class SettingsViewModel: ObservableObject {
     private var currentUserId: UUID?
 
     init(supabaseManager: SupabaseManager? = nil) {
-        self.supabaseManager = supabaseManager ?? SupabaseManager()
+        self.supabaseManager = supabaseManager ?? SupabaseManager.shared
     }
 
     func updateSupabaseManager(_ manager: SupabaseManager) {

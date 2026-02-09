@@ -158,6 +158,6 @@ struct AuthView: View {
 
 #Preview {
     AuthView()
-        .environmentObject(SupabaseManager())
+        .environmentObject(SupabaseManager.shared)
         .environmentObject(ThemeManager.shared)
 }

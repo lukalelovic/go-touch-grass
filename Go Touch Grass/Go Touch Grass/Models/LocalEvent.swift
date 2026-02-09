@@ -18,6 +18,7 @@ struct LocalEvent: Identifiable {
     let imageURL: String? // Placeholder for future image URLs
     let organizerName: String
     let attendeeCount: Int
+    let isUserGenerated: Bool // Distinguishes user events from API events
 
     init(
         id: UUID = UUID(),
@@ -28,7 +29,8 @@ struct LocalEvent: Identifiable {
         date: Date,
         imageURL: String? = nil,
         organizerName: String,
-        attendeeCount: Int = 0
+        attendeeCount: Int = 0,
+        isUserGenerated: Bool = false
     ) {
         self.id = id
         self.title = title
@@ -39,5 +41,6 @@ struct LocalEvent: Identifiable {
         self.imageURL = imageURL
         self.organizerName = organizerName
         self.attendeeCount = attendeeCount
+        self.isUserGenerated = isUserGenerated
     }
 }

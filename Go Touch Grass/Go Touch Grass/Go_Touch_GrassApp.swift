@@ -9,8 +9,8 @@ import SwiftUI
 
 @main
 struct Go_Touch_GrassApp: App {
-    @StateObject private var supabaseManager = SupabaseManager()
-    @StateObject private var themeManager = ThemeManager.shared
+    private let supabaseManager = SupabaseManager.shared
+    private let themeManager = ThemeManager.shared
 
     var body: some Scene {
         WindowGroup {

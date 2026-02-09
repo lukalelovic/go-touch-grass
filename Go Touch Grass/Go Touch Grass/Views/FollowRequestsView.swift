@@ -208,7 +208,7 @@ struct FollowRequestRow: View {
 #Preview {
     NavigationStack {
         FollowRequestsView()
-            .environmentObject(SupabaseManager())
+            .environmentObject(SupabaseManager.shared)
             .environmentObject(ThemeManager.shared)
     }
 }
