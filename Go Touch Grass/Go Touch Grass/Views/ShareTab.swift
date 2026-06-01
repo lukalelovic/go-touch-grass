@@ -81,6 +81,12 @@ struct ShareTab: View {
                                         RoundedRectangle(cornerRadius: 12)
                                             .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                                     )
+                                    .onChange(of: viewModel.notes) { _ in
+                                        // Clear error when user starts typing
+                                        if viewModel.errorMessage != nil {
+                                            viewModel.errorMessage = nil
+                                        }
+                                    }
                             }
                         }
 
@@ -138,19 +144,39 @@ struct ShareTab: View {
                         //     }
                         // }
 
+                        // Error Message
+                        if let errorMessage = viewModel.errorMessage {
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.red)
+                                Text(errorMessage)
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                            }
+                            .padding()
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+
                         // Save Button
                         Button(action: viewModel.saveActivity) {
                             HStack {
-                                Image(systemName: "checkmark.circle.fill")
-                                Text("Share Activity")
+                                if viewModel.isSaving {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                } else {
+                                    Image(systemName: "checkmark.circle.fill")
+                                    Text("Share Activity")
+                                }
                             }
                             .font(.headline)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(colors.accent)
+                            .background(viewModel.isSaving ? Color.gray : colors.accent)
                             .cornerRadius(12)
                         }
+                        .disabled(viewModel.isSaving)
                         .padding(.top, 10)
 
                         // Info Text

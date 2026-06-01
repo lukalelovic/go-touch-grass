@@ -59,6 +59,9 @@ class ShareViewModel: ObservableObject {
     // MARK: - Public Methods
 
     func saveActivity() {
+        // Clear previous error message
+        errorMessage = nil
+
         Task {
             await saveActivityAsync()
         }
@@ -73,12 +76,11 @@ class ShareViewModel: ObservableObject {
 
         // Get the authenticated user
         guard let authUser = supabaseManager.currentUser else {
-            errorMessage = "Not authenticated"
+            errorMessage = "Not authenticated. Please sign in and try again."
             return
         }
 
         isSaving = true
-        errorMessage = nil
 
         do {
             let userId = authUser.id
