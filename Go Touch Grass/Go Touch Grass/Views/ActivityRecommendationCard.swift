@@ -73,12 +73,12 @@ struct ActivityRecommendationCard: View {
 
                 Spacer()
 
-                // Log Activity button
+                // Touched Grass button
                 Button(action: onLog) {
                     HStack(spacing: 6) {
                         Image(systemName: recommendation.wasLogged ? "checkmark.circle.fill" : "plus.circle.fill")
                             .font(.subheadline)
-                        Text(recommendation.wasLogged ? "Logged" : "Log Activity")
+                        Text(recommendation.wasLogged ? "Completed" : "Touched Grass")
                             .font(.subheadline)
                             .fontWeight(.medium)
                     }

@@ -22,6 +22,39 @@ nonisolated struct MarkLoggedParams: Encodable, Sendable {
 class ActivityRecommendationService {
     private let supabase = SupabaseManager.shared.client
 
+    // Custom JSON decoder that handles both DATE and TIMESTAMP columns from Supabase
+    private var customDecoder: JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let dateString = try container.decode(String.self)
+
+            // Try ISO8601 with fractional seconds (for TIMESTAMP columns)
+            let iso8601Formatter = ISO8601DateFormatter()
+            iso8601Formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = iso8601Formatter.date(from: dateString) {
+                return date
+            }
+
+            // Try ISO8601 without fractional seconds
+            iso8601Formatter.formatOptions = [.withInternetDateTime]
+            if let date = iso8601Formatter.date(from: dateString) {
+                return date
+            }
+
+            // Try date-only format (for DATE columns like recommendation_date)
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            dateFormatter.timeZone = TimeZone(identifier: "UTC")
+            if let date = dateFormatter.date(from: dateString) {
+                return date
+            }
+
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date string: \(dateString)")
+        }
+        return decoder
+    }
+
     // MARK: - Fetch Today's Recommendations
 
     /// Fetch today's recommendations for the current user from the database
@@ -122,7 +155,10 @@ class ActivityRecommendationService {
 
     private func checkExistingRecommendations(for userId: UUID, date: Date) async throws -> [ActivityRecommendation] {
         let calendar = Calendar.current
-        let dateString = ISO8601DateFormatter().string(from: calendar.startOfDay(for: date))
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
+        let dateString = dateFormatter.string(from: calendar.startOfDay(for: date))
 
         do {
             let response = try await supabase
@@ -132,7 +168,7 @@ class ActivityRecommendationService {
                 .eq("recommendation_date", value: dateString)
                 .execute()
 
-            let recommendations: [ActivityRecommendation] = try JSONDecoder().decode(
+            let recommendations: [ActivityRecommendation] = try customDecoder.decode(
                 [ActivityRecommendation].self,
                 from: response.data
             )
@@ -152,7 +188,7 @@ class ActivityRecommendationService {
                 .eq("is_active", value: true)
                 .execute()
 
-            let templates: [ActivityTemplate] = try JSONDecoder().decode(
+            let templates: [ActivityTemplate] = try customDecoder.decode(
                 [ActivityTemplate].self,
                 from: response.data
             )
@@ -175,7 +211,7 @@ class ActivityRecommendationService {
                 .single()
                 .execute()
 
-            let preferences = try JSONDecoder().decode(
+            let preferences = try customDecoder.decode(
                 UserActivityPreferences.self,
                 from: response.data
             )
@@ -283,7 +319,10 @@ class ActivityRecommendationService {
         }
 
         let calendar = Calendar.current
-        let dateString = ISO8601DateFormatter().string(from: calendar.startOfDay(for: date))
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
+        let dateString = dateFormatter.string(from: calendar.startOfDay(for: date))
 
         let insert = RecommendationInsert(
             userId: userId.uuidString,
@@ -304,7 +343,7 @@ class ActivityRecommendationService {
                 .single()
                 .execute()
 
-            let recommendation = try JSONDecoder().decode(
+            let recommendation = try customDecoder.decode(
                 ActivityRecommendation.self,
                 from: response.data
             )

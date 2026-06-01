@@ -56,6 +56,7 @@ struct TouchGrassTab: View {
             }
             .navigationTitle("Touch Grass")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .onAppear {
                 Task {
                     await viewModel.loadTodaysRecommendations()
