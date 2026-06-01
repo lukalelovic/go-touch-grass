@@ -712,12 +712,76 @@ CREATE POLICY "Anyone can view user badges" ON user_badges FOR SELECT USING (tru
 CREATE POLICY "Anyone can view level milestones" ON level_milestones FOR SELECT USING (true);
 
 -- Recommendations
-CREATE POLICY "Activity templates are viewable by authenticated users" ON activity_templates FOR SELECT TO authenticated USING (is_active = TRUE);
+CREATE POLICY "Authenticated users can view active templates" ON activity_templates FOR SELECT TO authenticated USING (is_active = TRUE);
 CREATE POLICY "Users can view their own recommendations" ON daily_activity_recommendations FOR SELECT TO authenticated USING (auth.uid() = user_id);
-CREATE POLICY "Users can update their own recommendations" ON daily_activity_recommendations FOR UPDATE TO authenticated USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own recommendations" ON daily_activity_recommendations FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own recommendations" ON daily_activity_recommendations FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can view their own preferences" ON user_activity_preferences FOR SELECT TO authenticated USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert their own preferences" ON user_activity_preferences FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update their own preferences" ON user_activity_preferences FOR UPDATE TO authenticated USING (auth.uid() = user_id);
+CREATE POLICY "Users can update their own preferences" ON user_activity_preferences FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- ============================================================================
+-- TABLE-LEVEL GRANTS
+-- ============================================================================
+-- CRITICAL: RLS policies control WHAT rows users can see, but GRANTs control
+-- WHETHER they can access tables at all. Both are required!
+
+-- Core user tables
+GRANT SELECT, INSERT, UPDATE ON users TO authenticated;
+GRANT SELECT, INSERT, DELETE ON user_follows TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON follow_requests TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON activities TO authenticated;
+GRANT SELECT, INSERT, DELETE ON activity_likes TO authenticated;
+
+-- Reference tables (read-only)
+GRANT SELECT ON activity_types TO authenticated;
+GRANT SELECT ON activity_subtypes TO authenticated;
+GRANT SELECT ON badges TO authenticated;
+GRANT SELECT ON level_milestones TO authenticated;
+
+-- User-specific tables
+GRANT SELECT ON user_badges TO authenticated;
+
+-- Recommendation system tables
+GRANT SELECT ON activity_templates TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON daily_activity_recommendations TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON user_activity_preferences TO authenticated;
+
+-- Sequence permissions (needed for INSERT operations)
+GRANT USAGE, SELECT ON SEQUENCE activity_templates_id_seq TO authenticated;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+
+-- ============================================================================
+-- FUNCTION PERMISSIONS
+-- ============================================================================
+
+-- Recommendation functions
+GRANT EXECUTE ON FUNCTION public.get_todays_recommendations(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.mark_recommendation_logged(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_user_activity_type_preferences(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_template_completion_rate(INTEGER, UUID) TO authenticated;
+
+-- Activity functions
+GRANT EXECUTE ON FUNCTION public.toggle_activity_like(UUID, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.has_user_liked_activity(UUID, UUID) TO authenticated;
+
+-- Social functions
+GRANT EXECUTE ON FUNCTION public.toggle_user_follow(UUID, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_following(UUID, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_follower_count(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_following_count(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.send_follow_request(UUID, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.accept_follow_request(UUID, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.reject_follow_request(UUID, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.cancel_follow_request(UUID, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_pending_follow_requests(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_sent_follow_requests(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.has_pending_follow_request(UUID, UUID) TO authenticated;
+
+-- Badge & profile functions
+GRANT EXECUTE ON FUNCTION public.check_and_award_badges(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_user_streak(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.update_user_profile_picture(UUID, TEXT) TO authenticated;
 
 -- ============================================================================
 -- STORAGE BUCKET (Avatars)

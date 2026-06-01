@@ -38,6 +38,16 @@ Follow your friends to see what they are up to outside, and track your own activ
    ```
 7. **IMPORTANT**: Never commit `SupabaseConfig.swift` to version control (it's already gitignored)
 
+### Database Setup
+
+1. Go to your [Supabase Dashboard](https://supabase.com/dashboard) → **SQL Editor**
+2. Click **New Query**
+3. Run `schemas/schema.sql` (creates all tables, functions, RLS policies, and permissions)
+4. Run `schemas/seed_activity_templates.sql` (adds 50 activity recommendation templates)
+5. Done! Your database is ready.
+
+See [DATABASE_SETUP.md](DATABASE_SETUP.md) for detailed setup guide and troubleshooting.
+
 ### Email Auth in Supabase
 
 1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
