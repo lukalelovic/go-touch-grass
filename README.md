@@ -9,6 +9,14 @@ Limited to *one* activity post per day to prevent spam, and encourage getting of
 
 Follow your friends to see what they are up to outside, and track your own activities. Earn badges for each new type of activity you do, and earn levels in each type that you're persistent in.
 
+## Key Features
+
+- **Daily Activity Recommendations**: Get 5 personalized outdoor activity suggestions every day in the Touch Grass tab
+- **Activity Tracking**: Log your outdoor activities with location, photos, and notes
+- **Social Feed**: Follow friends and see their outdoor adventures
+- **Badges & Levels**: Earn achievements and level up based on your activity history
+- **Private Accounts**: Control who can see your activities with privacy settings
+
 ## Setup Instructions
 
 ### Prerequisites
@@ -43,17 +51,6 @@ Follow your friends to see what they are up to outside, and track your own activ
    - **Secure password change:** Toggle ON (recommended)
 7. Click **Save**
 
-### Register for Ticketmaster Discovery API
-1. Go to https://developer.ticketmaster.com/
-2. Click "Get Your Free API Key" or "Sign Up"
-3. Create an account with your email
-4. Once logged in, navigate to "My Apps" or "Get API Key"
-5. Create a new app and you'll receive:
-    - API Key (Consumer Key)
-    - API Secret (optional, not needed for Discovery API)
-6. Copy-paste the consumer key into the api-key variable in TicketmasterConfig.swift.template and rename this file to TicketmasterConfig.swift
-The free tier gives you 5,000 API calls per day with a rate limit of 5 requests per second.
-
 ## Tech Stack
 | Layer         | Choice                              |
 | ------------- | ----------------------------------- |
@@ -68,12 +65,29 @@ The free tier gives you 5,000 API calls per day with a rate limit of 5 requests 
 | Analytics     | PostHog (self-host later if needed) |
 
 
+## Recent Updates
+
+### Touch Grass Tab Overhaul (May 2026)
+The Touch Grass tab has been completely redesigned to focus on daily activity recommendations instead of event discovery:
+
+- **NEW**: Daily personalized activity recommendations (5 cards per day)
+- **NEW**: Smart recommendation algorithm based on user preferences and history
+- **NEW**: 50+ activity templates across 8 categories (Running, Walking, Hiking, Cycling, Climbing, Swimming, Kayaking, Other)
+- **NEW**: Pull-to-refresh and manual refresh (rate-limited to 3x/day)
+- **NEW**: Progress tracking with visual indicators
+- **REMOVED**: Event discovery and RSVP system (user-generated events, Ticketmaster API integration)
+
+See [PRD: Touch Grass Tab Overhaul](prds/touch-grass-tab-overhaul.md) for full details.
+
 ## TODO
 
 - [ ] More Database Activity Types (Gym w/ subtypes, Cleaning, Dinner, Movie, Park)
-- [ ] Improve event retrieval and leverage better event APIs
-- [ ] Show list of attended events on user profile (with dates)
-- [ ] Pro-tier: Pricing, enhanced event recommendations, unlimited activities per day
-- [ ] Support event creation for only good-standing users (older account, good posts)
+- [ ] V2 Recommendation Features:
+  - [ ] Weather-aware recommendations
+  - [ ] Social layer ("3 friends did this activity")
+  - [ ] Activity history view
+  - [ ] "Not interested" feedback button
+  - [ ] Template personalization with user-specific variables
+- [ ] Pro-tier: Pricing, enhanced recommendations, unlimited activities per day
 - [ ] Terms of Service, privacy policy, risk warnings
 - [ ] Deploy and publish

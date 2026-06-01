@@ -60,11 +60,11 @@ struct ProfileTab: View {
                                     }
 
                                     VStack(spacing: 4) {
-                                        Text("\(viewModel.attendedEventsCount)")
+                                        Text("\(viewModel.followerCount)")
                                             .font(.title3)
                                             .fontWeight(.bold)
                                             .foregroundColor(colors.primaryText)
-                                        Text("Events")
+                                        Text("Followers")
                                             .font(.caption)
                                             .foregroundColor(colors.secondaryText)
                                     }

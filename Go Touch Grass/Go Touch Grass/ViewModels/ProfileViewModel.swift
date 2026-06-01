@@ -28,15 +28,11 @@ class ProfileViewModel: ObservableObject {
     @Published var unlockedBadges: [BadgeProgress] = []
     @Published var lockedBadges: [BadgeProgress] = []
 
-    // Event attendance tracking
-    @Published var attendedEventsCount: Int = 0
-
     @Published var isLoading = false
     @Published var errorMessage: String?
 
     private let activityStore: ActivityStore
     private var supabaseManager: SupabaseManager
-    private let ticketmasterService = TicketmasterService.shared
     private var cancellables = Set<AnyCancellable>()
 
     init(activityStore: ActivityStore = .shared, supabaseManager: SupabaseManager? = nil) {
@@ -156,15 +152,7 @@ class ProfileViewModel: ObservableObject {
                 throw error
             }
 
-            // Fetch attended events count
-            do {
-                let eventsCount = try await ticketmasterService.fetchAttendedEventCount(userId: userId)
-                self.attendedEventsCount = eventsCount
-                print("✅ Fetched attended events count: \(eventsCount)")
-            } catch {
-                print("❌ Error fetching attended events count: \(error)")
-                self.attendedEventsCount = 0
-            }
+            // Event system removed - no longer tracking attended events
 
             isLoading = false
         } catch {
