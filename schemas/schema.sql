@@ -170,6 +170,7 @@ CREATE TABLE daily_activity_recommendations (
     estimated_duration_minutes INTEGER,
     was_logged BOOLEAN DEFAULT FALSE,
     logged_at TIMESTAMP WITH TIME ZONE,
+    activity_posted BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT unique_user_date_position UNIQUE(user_id, recommendation_date, card_position)
 );
@@ -179,6 +180,7 @@ CREATE INDEX idx_recommendations_user_id ON daily_activity_recommendations(user_
 CREATE INDEX idx_recommendations_date ON daily_activity_recommendations(recommendation_date);
 CREATE INDEX idx_recommendations_template ON daily_activity_recommendations(activity_template_id);
 CREATE INDEX idx_recommendations_logged ON daily_activity_recommendations(was_logged);
+CREATE INDEX idx_recommendations_posted ON daily_activity_recommendations(activity_posted);
 
 -- User Activity Preferences
 CREATE TABLE user_activity_preferences (

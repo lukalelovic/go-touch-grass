@@ -19,7 +19,7 @@ class RecommendationViewModel: ObservableObject {
     @Published var refreshCount = 0
 
     private let service = ActivityRecommendationService()
-    private let maxRefreshesPerDay = 3
+    private let maxRefreshesPerDay = 1
 
     // MARK: - Load Today's Recommendations
 
@@ -92,12 +92,40 @@ class RecommendationViewModel: ObservableObject {
     // MARK: - Log Activity
 
     func logActivity(_ recommendation: ActivityRecommendation) {
+        guard !recommendation.wasLogged else { return }
+
         Task {
             do {
+                guard let userId = SupabaseManager.shared.currentUser?.id else {
+                    throw RecommendationError.notAuthenticated
+                }
+
                 print("📝 Logging activity for recommendation: \(recommendation.id)")
 
                 // Mark recommendation as logged in database
                 try await service.markRecommendationLogged(recommendationId: recommendation.id)
+
+                // Create feed post similar to share activity
+                let activityType = recommendation.activityType ?? ActivityType(
+                    id: recommendation.activityTypeId,
+                    name: "Outdoor Activity",
+                    icon: nil
+                )
+                let prompt = recommendation.personalizedPrompt
+                    .lowercased()
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                let notes = "did \(prompt) today! Now it's your turn!"
+
+                let activity = try await SupabaseManager.shared.createActivity(
+                    userId: userId,
+                    activityType: activityType,
+                    notes: notes,
+                    location: nil,
+                    timestamp: Date()
+                )
+
+                // Add to local store so feed updates immediately
+                ActivityStore.shared.addActivity(activity)
 
                 // Update local state
                 if let index = todaysRecommendations.firstIndex(where: { $0.id == recommendation.id }) {
@@ -107,10 +135,7 @@ class RecommendationViewModel: ObservableObject {
                     todaysRecommendations[index] = updated
                 }
 
-                print("✅ Activity logged successfully")
-
-                // TODO: Navigate to activity creation screen with pre-filled data
-                // For MVP, we're just marking it as logged
+                print("✅ Activity logged and posted to feed")
 
             } catch {
                 print("❌ Error logging activity: \(error)")

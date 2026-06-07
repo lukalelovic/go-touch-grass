@@ -109,9 +109,8 @@ class ActivityRecommendationService {
 
     // MARK: - Generate Daily Recommendations (MVP - Simple Version)
 
-    /// Generate 5 daily recommendations for a user
-    /// This is a simplified MVP version that selects random templates
-    /// In production, this would use a more sophisticated algorithm
+    /// Generate 1 daily recommendation for a user
+    /// Only 1 activity per day — keeps it simple, no overwhelm
     func generateDailyRecommendations(for userId: UUID, date: Date = Date()) async throws -> [ActivityRecommendation] {
         print("🎲 Generating daily recommendations for user: \(userId)")
 
@@ -124,17 +123,17 @@ class ActivityRecommendationService {
 
         // 2. Fetch all active templates
         let templates = try await fetchActiveTemplates()
-        guard templates.count >= 5 else {
+        guard !templates.isEmpty else {
             throw RecommendationError.insufficientTemplates
         }
 
         // 3. Get user preferences (if any)
         let preferences = try? await getUserPreferences(for: userId)
 
-        // 4. Simple selection: pick 5 random templates with some variety
-        let selectedTemplates = selectTemplates(from: templates, preferences: preferences, count: 5)
+        // 4. Simple selection: pick 1 random template
+        let selectedTemplates = selectTemplates(from: templates, preferences: preferences, count: 1)
 
-        // 5. Create recommendation records
+        // 5. Create recommendation record
         var recommendations: [ActivityRecommendation] = []
 
         for (index, template) in selectedTemplates.enumerated() {

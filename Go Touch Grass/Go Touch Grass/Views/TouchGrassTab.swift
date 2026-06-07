@@ -30,7 +30,7 @@ struct TouchGrassTab: View {
                             progressView(colors: colors)
                         }
 
-                        // Daily activity cards (5 max)
+                        // Daily activity card (1 per day)
                         if viewModel.isLoading {
                             loadingView()
                         } else if let error = viewModel.errorMessage {
@@ -65,12 +65,27 @@ struct TouchGrassTab: View {
         }
     }
 
+    // MARK: - Preview Text
+
+    @ViewBuilder
+    private func previewText(colors: AppColors) -> some View {
+        if viewModel.completedCount > 0 {
+            Text("Nice work! You've touched grass today!")
+                .font(.subheadline)
+                .foregroundStyle(colors.accent)
+        } else {
+            Text("Get outside — you've got one activity waiting!")
+                .font(.subheadline)
+                .foregroundStyle(colors.secondaryText)
+        }
+    }
+
     // MARK: - Header View
 
     @ViewBuilder
     private func headerView(colors: AppColors) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Today's Activities")
+            Text("Today's Activity")
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundStyle(colors.primaryText)
@@ -80,9 +95,7 @@ struct TouchGrassTab: View {
                 .foregroundStyle(colors.secondaryText)
 
             if viewModel.hasRecommendations {
-                Text("Tap an activity below to get started!")
-                    .font(.subheadline)
-                    .foregroundStyle(colors.secondaryText)
+                previewText(colors: colors)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
