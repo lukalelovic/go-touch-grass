@@ -72,21 +72,6 @@ Follow your friends to see what they are up to outside, and track your own activ
 | Maps          | MapKit                              |
 | Analytics     | PostHog (self-host later if needed) |
 
-
-## Recent Updates
-
-### Touch Grass Tab Overhaul (May 2026)
-The Touch Grass tab has been completely redesigned to focus on daily activity recommendations instead of event discovery:
-
-- **NEW**: Daily personalized activity recommendations (5 cards per day)
-- **NEW**: Smart recommendation algorithm based on user preferences and history
-- **NEW**: 50+ activity templates across 8 categories (Running, Walking, Hiking, Cycling, Climbing, Swimming, Kayaking, Other)
-- **NEW**: Pull-to-refresh and manual refresh (rate-limited to 3x/day)
-- **NEW**: Progress tracking with visual indicators
-- **REMOVED**: Event discovery and RSVP system (user-generated events, Ticketmaster API integration)
-
-See [PRD: Touch Grass Tab Overhaul](prds/touch-grass-tab-overhaul.md) for full details.
-
 ## TODO
 
 - [ ] More Database Activity Types (Gym w/ subtypes, Cleaning, Dinner, Movie, Park)
