@@ -114,7 +114,7 @@ class RecommendationViewModel: ObservableObject {
                 let prompt = recommendation.personalizedPrompt
                     .lowercased()
                     .trimmingCharacters(in: .whitespacesAndNewlines)
-                let notes = "did \(prompt) today! Now it's your turn!"
+                let notes = "Completed \"\(recommendation.personalizedPrompt)\" today! Now it's your turn!"
 
                 let activity = try await SupabaseManager.shared.createActivity(
                     userId: userId,
