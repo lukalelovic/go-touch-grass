@@ -109,8 +109,8 @@ class ActivityRecommendationService {
 
     // MARK: - Generate Daily Recommendations (MVP - Simple Version)
 
-    /// Generate 1 daily recommendation for a user
-    /// Only 1 activity per day — keeps it simple, no overwhelm
+    /// Generate 3 daily recommendations for a user
+    /// Provides variety and choice while keeping it manageable
     func generateDailyRecommendations(for userId: UUID, date: Date = Date()) async throws -> [ActivityRecommendation] {
         print("🎲 Generating daily recommendations for user: \(userId)")
 
@@ -130,10 +130,10 @@ class ActivityRecommendationService {
         // 3. Get user preferences (if any)
         let preferences = try? await getUserPreferences(for: userId)
 
-        // 4. Simple selection: pick 1 random template
-        let selectedTemplates = selectTemplates(from: templates, preferences: preferences, count: 1)
+        // 4. Select 3 templates for variety
+        let selectedTemplates = selectTemplates(from: templates, preferences: preferences, count: 3)
 
-        // 5. Create recommendation record
+        // 5. Create recommendation records
         var recommendations: [ActivityRecommendation] = []
 
         for (index, template) in selectedTemplates.enumerated() {
@@ -352,6 +352,31 @@ class ActivityRecommendationService {
         } catch {
             print("❌ Error creating recommendation: \(error)")
             throw RecommendationError.creationFailed(error)
+        }
+    }
+    
+    // MARK: - Delete Today's Recommendations
+    
+    /// Delete existing recommendations for today (used for refresh)
+    func deleteTodaysRecommendations(for userId: UUID, date: Date = Date()) async throws {
+        let calendar = Calendar.current
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
+        let dateString = dateFormatter.string(from: calendar.startOfDay(for: date))
+        
+        do {
+            _ = try await supabase
+                .from("daily_activity_recommendations")
+                .delete()
+                .eq("user_id", value: userId.uuidString)
+                .eq("recommendation_date", value: dateString)
+                .execute()
+            
+            print("🗑️ Deleted existing recommendations for today")
+        } catch {
+            print("⚠️ Error deleting recommendations (may not exist): \(error)")
+            // Don't throw - it's okay if there are no recommendations to delete
         }
     }
 }

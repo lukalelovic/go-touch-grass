@@ -14,7 +14,7 @@ struct ProfileTab: View {
     @State private var refreshTrigger = UUID()
 
     var body: some View {
-        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+        let colors = AppColors()
 
         NavigationStack {
             ZStack {
@@ -332,83 +332,8 @@ struct ProfileTab: View {
                         .cornerRadius(16)
 
                         // Settings/Logout Section
-                        VStack(spacing: 12) {
-                            // Follow Requests (only show for private accounts)
-                            if viewModel.currentUser?.isPrivate == true {
-                                NavigationLink(destination: FollowRequestsView()) {
-                                    HStack {
-                                        Image(systemName: "person.badge.plus")
-                                        Text("Follow Requests")
-                                        Spacer()
-                                        if viewModel.pendingRequestCount > 0 {
-                                            Text("\(viewModel.pendingRequestCount)")
-                                                .font(.caption)
-                                                .fontWeight(.bold)
-                                                .foregroundColor(.white)
-                                                .padding(.horizontal, 8)
-                                                .padding(.vertical, 4)
-                                                .background(Color.red)
-                                                .clipShape(Capsule())
-                                        }
-                                        Image(systemName: "chevron.right")
-                                    }
-                                    .foregroundColor(colors.primaryText)
-                                    .padding()
-                                    .background(colors.cardBackground)
-                                    .cornerRadius(12)
-                                }
-                            }
-
-                            // Dark Mode Toggle
-                            Button(action: {
-                                themeManager.toggleTheme()
-                            }) {
-                                HStack {
-                                    Image(systemName: themeManager.isDarkMode ? "moon.fill" : "sun.max.fill")
-                                    Text(themeManager.isDarkMode ? "Dark Mode" : "Light Mode")
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                }
-                                .foregroundColor(colors.primaryText)
-                                .padding()
-                                .background(colors.cardBackground)
-                                .cornerRadius(12)
-                            }
-
-                            NavigationLink(destination: SettingsView()) {
-                                HStack {
-                                    Image(systemName: "gearshape.fill")
-                                    Text("Settings")
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                }
-                                .foregroundColor(colors.primaryText)
-                                .padding()
-                                .background(colors.cardBackground)
-                                .cornerRadius(12)
-                            }
-
-                            Button(action: {
-                                Task {
-                                    do {
-                                        try await supabaseManager.signOut()
-                                    } catch {
-                                        print("Error signing out: \(error)")
-                                    }
-                                }
-                            }) {
-                                HStack {
-                                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                                    Text("Logout")
-                                    Spacer()
-                                }
-                                .foregroundColor(.red)
-                                .padding()
-                                .background(colors.cardBackground)
-                                .cornerRadius(12)
-                            }
-                        }
-                        .padding(.horizontal)
+                        settingsSection(colors: colors)
+                            .padding(.horizontal)
                     }
                     .padding()
                 }
@@ -416,7 +341,7 @@ struct ProfileTab: View {
             .navigationTitle("Profile")
             .toolbarBackground(colors.primaryBackground, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarColorScheme(themeManager.isDarkMode ? .dark : .light, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .task(id: refreshTrigger) {
                 viewModel.updateSupabaseManager(supabaseManager)
                 await viewModel.refreshProfile()
@@ -431,6 +356,71 @@ struct ProfileTab: View {
                     await viewModel.refreshProfile()
                     print("✅ ProfileTab refreshProfile() completed - new URL: \(viewModel.currentUser?.profilePictureUrl ?? "nil")")
                 }
+            }
+        }
+    }
+    
+    // MARK: - Settings Section
+    @ViewBuilder
+    private func settingsSection(colors: AppColors) -> some View {
+        VStack(spacing: 12) {
+            // Follow Requests (only show for private accounts)
+            if viewModel.currentUser?.isPrivate == true {
+                NavigationLink(destination: FollowRequestsView()) {
+                    HStack {
+                        Image(systemName: "person.badge.plus")
+                        Text("Follow Requests")
+                        Spacer()
+                        if viewModel.pendingRequestCount > 0 {
+                            Text("\(viewModel.pendingRequestCount)")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.red)
+                                .clipShape(Capsule())
+                        }
+                        Image(systemName: "chevron.right")
+                    }
+                    .foregroundColor(colors.primaryText)
+                    .padding()
+                    .background(colors.cardBackground)
+                    .cornerRadius(12)
+                }
+            }
+
+            NavigationLink(destination: SettingsView()) {
+                HStack {
+                    Image(systemName: "gearshape.fill")
+                    Text("Settings")
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                }
+                .foregroundColor(colors.primaryText)
+                .padding()
+                .background(colors.cardBackground)
+                .cornerRadius(12)
+            }
+
+            Button(action: {
+                Task {
+                    do {
+                        try await supabaseManager.signOut()
+                    } catch {
+                        print("Error signing out: \(error)")
+                    }
+                }
+            }) {
+                HStack {
+                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                    Text("Logout")
+                    Spacer()
+                }
+                .foregroundColor(.red)
+                .padding()
+                .background(colors.cardBackground)
+                .cornerRadius(12)
             }
         }
     }

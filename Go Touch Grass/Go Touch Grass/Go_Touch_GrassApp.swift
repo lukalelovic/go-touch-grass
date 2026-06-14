@@ -9,14 +9,22 @@ import SwiftUI
 
 @main
 struct Go_Touch_GrassApp: App {
+    @State private var showLanding = true
+
     private let supabaseManager = SupabaseManager.shared
     private let themeManager = ThemeManager.shared
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(supabaseManager)
-                .environmentObject(themeManager)
+            if showLanding {
+                LandingAnimationView {
+                    showLanding = false
+                }
+            } else {
+                ContentView()
+                    .environmentObject(supabaseManager)
+                    .environmentObject(themeManager)
+            }
         }
     }
 }

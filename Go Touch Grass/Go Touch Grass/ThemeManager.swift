@@ -9,73 +9,69 @@ import SwiftUI
 import Combine
 
 class ThemeManager: ObservableObject {
-    @Published var isDarkMode: Bool = false
+    @Published var isDarkMode: Bool = true // Always dark mode
 
     static let shared = ThemeManager()
 
     private init() {
-        self.isDarkMode = UserDefaults.standard.bool(forKey: "isDarkMode")
-    }
-
-    func toggleTheme() {
-        isDarkMode.toggle()
-        UserDefaults.standard.set(isDarkMode, forKey: "isDarkMode")
+        // Always use dark mode
+        self.isDarkMode = true
     }
 }
 
 struct AppColors {
     let isDarkMode: Bool
 
-    // Background colors
+    // Background colors - always dark mode
     var primaryBackground: Color {
-        isDarkMode ? Color(red: 0.12, green: 0.12, blue: 0.12) : Color(red: 0.85, green: 0.93, blue: 0.85)
+        Color(red: 0.169, green: 0.341, blue: 0.282) // #2B5748 - Main earthy dark green
     }
 
     var cardBackground: Color {
-        isDarkMode ? Color(red: 0.2, green: 0.3, blue: 0.2) : Color.white.opacity(0.5)
+        Color(red: 0.14, green: 0.28, blue: 0.23) // Darker for better contrast
     }
 
     var secondaryCardBackground: Color {
-        isDarkMode ? Color(red: 0.15, green: 0.25, blue: 0.15) : Color.white.opacity(0.3)
+        Color(red: 0.12, green: 0.24, blue: 0.20) // Even darker for secondary cards
     }
 
     var eventCardBackground: Color {
-        Color(red: 0.2, green: 0.3, blue: 0.2)
+        Color(red: 0.16, green: 0.32, blue: 0.26) // Slightly lighter than cardBackground
     }
 
-    // Text colors
+    // Text colors - always dark mode
     var primaryText: Color {
-        isDarkMode ? .white : .primary
+        .white
     }
 
     var secondaryText: Color {
-        isDarkMode ? Color.white.opacity(0.7) : .secondary
+        Color.white.opacity(0.7)
     }
 
     var tertiaryText: Color {
-        isDarkMode ? Color.white.opacity(0.5) : .secondary
+        Color.white.opacity(0.5)
     }
 
-    // Accent colors (keep green)
+    // Accent colors (vibrant green for contrast)
     var accent: Color {
-        Color(red: 0.1, green: 0.6, blue: 0.1)
+        Color(red: 0.4, green: 0.8, blue: 0.4) // Brighter green for better visibility
     }
 
     var accentDark: Color {
-        Color(red: 0.2, green: 0.5, blue: 0.2)
+        Color(red: 0.35, green: 0.7, blue: 0.35)
     }
 
     var accentLight: Color {
-        Color(red: 0.3, green: 0.7, blue: 0.3)
+        Color(red: 0.5, green: 0.85, blue: 0.5)
     }
 
     // Special colors
     var divider: Color {
-        isDarkMode ? Color.white.opacity(0.2) : Color.gray.opacity(0.3)
+        Color.white.opacity(0.2)
     }
 
-    init(isDarkMode: Bool) {
-        self.isDarkMode = isDarkMode
+    init(isDarkMode: Bool = true) {
+        self.isDarkMode = true // Always dark mode
     }
 }
 

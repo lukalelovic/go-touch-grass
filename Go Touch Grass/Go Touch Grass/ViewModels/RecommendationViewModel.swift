@@ -32,19 +32,21 @@ class RecommendationViewModel: ObservableObject {
 
             // Try to fetch existing recommendations
             var recommendations = try await service.getTodaysRecommendations()
+            print("📊 Found \(recommendations.count) existing recommendations")
 
             // If no recommendations exist, generate them
             if recommendations.isEmpty {
-                print("💡 No recommendations found, generating new ones...")
+                print("💡 No recommendations found, generating new ones (count: 3)...")
                 guard let userId = SupabaseManager.shared.currentUser?.id else {
                     throw RecommendationError.notAuthenticated
                 }
 
                 recommendations = try await service.generateDailyRecommendations(for: userId)
+                print("✨ Generated \(recommendations.count) new recommendations")
             }
 
             todaysRecommendations = recommendations
-            print("✅ Loaded \(recommendations.count) recommendations")
+            print("✅ Loaded \(recommendations.count) total recommendations")
 
         } catch {
             print("❌ Error loading recommendations: \(error)")
@@ -70,16 +72,18 @@ class RecommendationViewModel: ObservableObject {
                 throw RecommendationError.notAuthenticated
             }
 
-            print("🔄 Manually refreshing recommendations...")
+            print("🔄 Manually refreshing recommendations (will generate 3)...")
+            
+            // Delete existing recommendations first
+            try await service.deleteTodaysRecommendations(for: userId)
 
-            // TODO: In production, this would delete old recommendations and generate new ones
-            // For MVP, we'll just regenerate
+            // Generate new recommendations
             let recommendations = try await service.generateDailyRecommendations(for: userId)
 
             todaysRecommendations = recommendations
             refreshCount += 1
 
-            print("✅ Refreshed recommendations (count: \(refreshCount)/\(maxRefreshesPerDay))")
+            print("✅ Refreshed with \(recommendations.count) recommendations (refresh count: \(refreshCount)/\(maxRefreshesPerDay))")
 
         } catch {
             print("❌ Error refreshing recommendations: \(error)")

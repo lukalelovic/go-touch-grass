@@ -10,8 +10,10 @@ import MapKit
 
 struct ActivityRowView: View {
     let activity: Activity
-
+    
     var body: some View {
+        let colors = AppColors()
+        
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 12) {
                 // Tappable user profile section
@@ -27,7 +29,7 @@ struct ActivityRowView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(activity.user.username)
                                 .font(.headline)
-                                .foregroundColor(.white)
+                                .foregroundColor(colors.primaryText)
 
                             HStack(spacing: 4) {
                                 if let icon = activity.activityType.icon {
@@ -37,7 +39,7 @@ struct ActivityRowView: View {
                                 Text(activity.activityType.rawValue)
                                     .font(.subheadline)
                             }
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundColor(colors.secondaryText)
                         }
                     }
                 }
@@ -48,7 +50,7 @@ struct ActivityRowView: View {
                 // Timestamp
                 Text(timeAgoString(from: activity.timestamp))
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.8))
+                    .foregroundColor(colors.secondaryText)
             }
 
             // Notes preview
@@ -56,7 +58,7 @@ struct ActivityRowView: View {
                 Text(notes)
                     .font(.body)
                     .lineLimit(2)
-                    .foregroundColor(.white)
+                    .foregroundColor(colors.primaryText)
             }
 
             // Map preview
@@ -72,7 +74,7 @@ struct ActivityRowView: View {
                         latitude: location.latitude,
                         longitude: location.longitude
                     ))
-                    .tint(.green)
+                    .tint(colors.accent)
                 }
                 .frame(height: 120)
                 .cornerRadius(8)
@@ -87,11 +89,11 @@ struct ActivityRowView: View {
                     Text(name)
                         .font(.caption)
                 }
-                .foregroundColor(.white.opacity(0.8))
+                .foregroundColor(colors.secondaryText)
             }
         }
         .padding(12)
-        .background(Color(red: 0.2, green: 0.3, blue: 0.2))
+        .background(colors.cardBackground)
         .cornerRadius(12)
     }
 

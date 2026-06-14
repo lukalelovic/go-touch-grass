@@ -13,7 +13,7 @@ struct FeedTab: View {
     @EnvironmentObject var supabaseManager: SupabaseManager
 
     var body: some View {
-        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+        let colors = AppColors()
 
         NavigationStack {
             ZStack {
@@ -47,12 +47,12 @@ struct FeedTab: View {
             .navigationTitle("Feed")
             .toolbarBackground(colors.primaryBackground, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarColorScheme(themeManager.isDarkMode ? .dark : .light, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NavigationLink(destination: UserSearchView()) {
                         Image(systemName: "magnifyingglass")
-                            .foregroundColor(colors.primaryText)
+                            .foregroundColor(colors.cardBackground)
                     }
                 }
             }

@@ -13,7 +13,7 @@ struct ShareTab: View {
     @EnvironmentObject var supabaseManager: SupabaseManager
 
     var body: some View {
-        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+        let colors = AppColors()
 
         NavigationStack {
             ZStack {
@@ -38,18 +38,33 @@ struct ShareTab: View {
                                 .background(colors.cardBackground)
                                 .cornerRadius(12)
                             } else {
-                                Picker("Activity Type", selection: $viewModel.selectedActivityType) {
+                                Menu {
                                     ForEach(viewModel.availableActivityTypes) { type in
-                                        HStack {
-                                            if let icon = type.icon {
-                                                Image(systemName: icon)
+                                        Button(action: {
+                                            viewModel.selectedActivityType = type
+                                        }) {
+                                            HStack {
+                                                if let icon = type.icon {
+                                                    Image(systemName: icon)
+                                                }
+                                                Text(type.name)
                                             }
-                                            Text(type.name)
                                         }
-                                        .tag(type)
+                                    }
+                                } label: {
+                                    HStack {
+                                        if let icon = viewModel.selectedActivityType.icon {
+                                            Image(systemName: icon)
+                                                .foregroundColor(colors.primaryText)
+                                        }
+                                        Text(viewModel.selectedActivityType.name)
+                                            .foregroundColor(colors.primaryText)
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                            .foregroundColor(colors.secondaryText)
+                                            .font(.caption)
                                     }
                                 }
-                                .pickerStyle(.menu)
                                 .padding()
                                 .background(colors.cardBackground)
                                 .cornerRadius(12)
@@ -74,7 +89,7 @@ struct ShareTab: View {
                                     .frame(height: 120)
                                     .padding(4)
                                     .scrollContentBackground(.hidden)
-                                    .background(themeManager.isDarkMode ? Color(red: 0.2, green: 0.3, blue: 0.2) : Color.white.opacity(0.8))
+                                    .background(colors.cardBackground)
                                     .foregroundColor(colors.primaryText)
                                     .cornerRadius(12)
                                     .overlay(
@@ -163,17 +178,17 @@ struct ShareTab: View {
                             HStack {
                                 if viewModel.isSaving {
                                     ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .progressViewStyle(CircularProgressViewStyle(tint: colors.primaryBackground))
                                 } else {
                                     Image(systemName: "checkmark.circle.fill")
                                     Text("Share Activity")
                                 }
                             }
                             .font(.headline)
-                            .foregroundColor(.white)
+                            .foregroundColor(colors.primaryBackground)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(viewModel.isSaving ? Color.gray : colors.accent)
+                            .background(viewModel.isSaving ? Color.gray : .white)
                             .cornerRadius(12)
                         }
                         .disabled(viewModel.isSaving)
@@ -192,7 +207,7 @@ struct ShareTab: View {
             .navigationTitle("Share")
             .toolbarBackground(colors.primaryBackground, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarColorScheme(themeManager.isDarkMode ? .dark : .light, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .sheet(isPresented: $viewModel.showLocationPicker) {
                 LocationPickerView(selectedLocation: $viewModel.selectedLocation)
             }

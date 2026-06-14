@@ -13,7 +13,7 @@ struct TouchGrassTab: View {
     @EnvironmentObject var themeManager: ThemeManager
 
     var body: some View {
-        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+        let colors = AppColors()
 
         NavigationStack {
             ZStack {
@@ -54,9 +54,7 @@ struct TouchGrassTab: View {
                     await viewModel.loadTodaysRecommendations()
                 }
             }
-            .navigationTitle("Touch Grass")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .navigationBarHidden(true)
             .onAppear {
                 Task {
                     await viewModel.loadTodaysRecommendations()
@@ -74,7 +72,7 @@ struct TouchGrassTab: View {
                 .font(.subheadline)
                 .foregroundStyle(colors.accent)
         } else {
-            Text("Get outside — you've got one activity waiting!")
+            Text("Get outside — you've got \(viewModel.totalCount) activities waiting!")
                 .font(.subheadline)
                 .foregroundStyle(colors.secondaryText)
         }
@@ -85,7 +83,7 @@ struct TouchGrassTab: View {
     @ViewBuilder
     private func headerView(colors: AppColors) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Today's Activity")
+            Text("Today's Activities")
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundStyle(colors.primaryText)
@@ -265,10 +263,10 @@ struct TouchGrassTab: View {
                 }
                 .font(.subheadline)
                 .fontWeight(.medium)
-                .foregroundStyle(colors.accent)
+                .foregroundStyle(colors.primaryBackground)
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)
-                .background(colors.cardBackground)
+                .background(.white)
                 .cornerRadius(20)
             }
             .disabled(viewModel.isLoading || !viewModel.canRefresh)

@@ -18,7 +18,7 @@ struct AuthView: View {
     @State private var isLoading = false
 
     var body: some View {
-        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+        let colors = AppColors()
 
         ZStack {
             colors.primaryBackground.ignoresSafeArea()

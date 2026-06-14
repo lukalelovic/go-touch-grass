@@ -11,8 +11,11 @@ import SwiftUI
 struct ActivityRecommendationCard: View {
     let recommendation: ActivityRecommendation
     let onLog: () -> Void
+    @EnvironmentObject var themeManager: ThemeManager
 
     var body: some View {
+        let colors = AppColors()
+        
         VStack(alignment: .leading, spacing: 12) {
             // Activity type header
             HStack(spacing: 8) {
@@ -20,12 +23,12 @@ struct ActivityRecommendationCard: View {
                    let icon = activityType.icon {
                     Image(systemName: icon)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(colors.secondaryText)
                 }
 
                 Text(recommendation.activityType?.name ?? "Activity")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(colors.secondaryText)
 
                 Spacer()
 
@@ -37,7 +40,7 @@ struct ActivityRecommendationCard: View {
                         Text("Done")
                             .font(.caption)
                     }
-                    .foregroundStyle(.green)
+                    .foregroundStyle(colors.accent)
                 }
             }
 
@@ -45,18 +48,19 @@ struct ActivityRecommendationCard: View {
             Text(recommendation.personalizedPrompt)
                 .font(.title3)
                 .fontWeight(.semibold)
-                .foregroundStyle(.primary)
+                .foregroundStyle(colors.primaryText)
                 .lineLimit(3)
 
             // Challenge (if exists)
             if let challenge = recommendation.personalizedChallenge {
                 Text(challenge)
                     .font(.body)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(colors.secondaryText)
                     .lineLimit(2)
             }
 
             Divider()
+                .background(colors.divider)
 
             // Duration and action button
             HStack {
@@ -68,7 +72,7 @@ struct ActivityRecommendationCard: View {
                         Text("\(duration) min")
                             .font(.caption)
                     }
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(colors.secondaryText)
                 }
 
                 Spacer()
@@ -82,23 +86,24 @@ struct ActivityRecommendationCard: View {
                             .font(.subheadline)
                             .fontWeight(.medium)
                     }
+                    .foregroundColor(recommendation.wasLogged ? .white.opacity(0.7) : colors.primaryBackground)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
+                    .background(recommendation.wasLogged ? Color.gray : .white)
+                    .cornerRadius(8)
                 }
-                .buttonStyle(.borderedProminent)
                 .disabled(recommendation.wasLogged)
-                .tint(recommendation.wasLogged ? .gray : .blue)
             }
         }
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                .fill(colors.cardBackground)
+                .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(recommendation.wasLogged ? Color.green.opacity(0.3) : Color.clear, lineWidth: 2)
+                .stroke(recommendation.wasLogged ? colors.accent.opacity(0.5) : Color.clear, lineWidth: 2)
         )
     }
 }
@@ -126,7 +131,9 @@ struct ActivityRecommendationCard: View {
             print("Log button tapped")
         }
     )
+    .environmentObject(ThemeManager.shared)
     .padding()
+    .background(AppColors().primaryBackground)
 }
 
 #Preview("Recommendation Card - Logged") {
@@ -150,7 +157,9 @@ struct ActivityRecommendationCard: View {
             print("Log button tapped")
         }
     )
+    .environmentObject(ThemeManager.shared)
     .padding()
+    .background(AppColors().primaryBackground)
 }
 
 #Preview("Multiple Cards") {
@@ -215,4 +224,6 @@ struct ActivityRecommendationCard: View {
         }
         .padding()
     }
+    .environmentObject(ThemeManager.shared)
+    .background(AppColors().primaryBackground)
 }

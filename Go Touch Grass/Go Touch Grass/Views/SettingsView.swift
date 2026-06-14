@@ -15,7 +15,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
-        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+        let colors = AppColors()
 
         ZStack {
             colors.primaryBackground
@@ -199,7 +199,7 @@ struct SettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(colors.primaryBackground, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
-        .toolbarColorScheme(themeManager.isDarkMode ? .dark : .light, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .onAppear {
             viewModel.updateSupabaseManager(supabaseManager)
             viewModel.loadUserData()

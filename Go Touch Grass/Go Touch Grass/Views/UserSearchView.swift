@@ -18,7 +18,7 @@ struct UserSearchView: View {
     private let supabaseManager = SupabaseManager.shared
 
     var body: some View {
-        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+        let colors = AppColors()
 
         ZStack {
             colors.primaryBackground
@@ -90,6 +90,9 @@ struct UserSearchView: View {
         }
         .navigationTitle("Search Users")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(colors.primaryBackground, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .searchable(text: $searchText, prompt: "Search by username")
         .onChange(of: searchText) { oldValue, newValue in
             performSearch(query: newValue)
