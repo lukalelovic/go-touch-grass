@@ -21,7 +21,7 @@ struct UserProfileView: View {
     @EnvironmentObject var supabaseManager: SupabaseManager
 
     var body: some View {
-        let colors = AppColors(isDarkMode: themeManager.isDarkMode)
+        let colors = AppColors()
 
         ZStack {
             colors.primaryBackground
@@ -41,12 +41,6 @@ struct UserProfileView: View {
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(colors.primaryText)
-
-                        if let email = user.email {
-                            Text(email)
-                                .font(.subheadline)
-                                .foregroundColor(colors.secondaryText)
-                        }
 
                         // Follower/Following counts
                         HStack(spacing: 24) {

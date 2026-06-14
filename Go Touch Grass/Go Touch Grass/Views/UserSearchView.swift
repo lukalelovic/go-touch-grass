@@ -55,31 +55,7 @@ struct UserSearchView: View {
                 } else {
                     List(searchResults) { user in
                         NavigationLink(destination: UserProfileView(user: user, isCurrentUser: false)) {
-                            HStack(spacing: 12) {
-                                ProfilePictureView(
-                                    profilePictureUrl: user.profilePictureUrl,
-                                    size: 50
-                                )
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(user.username)
-                                        .font(.headline)
-                                        .foregroundColor(colors.primaryText)
-
-                                    if let email = user.email {
-                                        Text(email)
-                                            .font(.caption)
-                                            .foregroundColor(colors.secondaryText)
-                                    }
-                                }
-
-                                Spacer()
-
-                                Image(systemName: "chevron.right")
-                                    .foregroundColor(colors.secondaryText)
-                                    .font(.caption)
-                            }
-                            .padding(.vertical, 4)
+                            UserSearchRowView(user: user)
                         }
                         .listRowBackground(colors.cardBackground)
                     }
@@ -122,3 +98,68 @@ struct UserSearchView: View {
         }
     }
 }
+// MARK: - User Search Row View
+
+struct UserSearchRowView: View {
+    let user: User
+    @State private var levelInfo: UserLevelInfo?
+    @State private var isLoading = true
+    
+    var body: some View {
+        let colors = AppColors()
+        
+        HStack(spacing: 12) {
+            ProfilePictureView(
+                profilePictureUrl: user.profilePictureUrl,
+                size: 50
+            )
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(user.username)
+                    .font(.headline)
+                    .foregroundColor(colors.primaryText)
+
+                if isLoading {
+                    Text("Loading...")
+                        .font(.caption)
+                        .foregroundColor(colors.secondaryText)
+                } else if let levelInfo = levelInfo {
+                    HStack(spacing: 4) {
+                        if let icon = levelInfo.milestoneIcon {
+                            Image(systemName: icon)
+                                .font(.caption)
+                        }
+                        Text("Level \(levelInfo.currentLevel)")
+                            .font(.caption)
+                        if let milestoneName = levelInfo.milestoneName {
+                            Text("• \(milestoneName)")
+                                .font(.caption)
+                        }
+                    }
+                    .foregroundColor(colors.secondaryText)
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .foregroundColor(colors.secondaryText)
+                .font(.caption)
+        }
+        .padding(.vertical, 4)
+        .task {
+            await loadUserLevel()
+        }
+    }
+    
+    private func loadUserLevel() async {
+        do {
+            levelInfo = try await SupabaseManager.shared.getUserLevelInfo(userId: user.id)
+            isLoading = false
+        } catch {
+            print("❌ Failed to load level for user \(user.username): \(error)")
+            isLoading = false
+        }
+    }
+}
+
