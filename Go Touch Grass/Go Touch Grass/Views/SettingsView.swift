@@ -148,28 +148,6 @@ struct SettingsView: View {
                         .cornerRadius(12)
                     }
 
-                    // Export Activities Section
-                    VStack(spacing: 16) {
-                        Text("Export Activities")
-                            .font(.headline)
-                            .foregroundColor(colors.primaryText)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                        Button(action: {
-                            viewModel.exportActivities()
-                        }) {
-                            HStack {
-                                Image(systemName: "square.and.arrow.up")
-                                Text("Export All Activities")
-                                Spacer()
-                            }
-                            .foregroundColor(colors.primaryText)
-                            .padding()
-                            .background(colors.cardBackground)
-                            .cornerRadius(12)
-                        }
-                    }
-
                     // Danger Zone
                     VStack(spacing: 16) {
                         Text("Danger Zone")
@@ -228,29 +206,12 @@ struct SettingsView: View {
         } message: {
             Text("Are you sure you want to delete your account? This action cannot be undone. All your activities, followers, and data will be permanently deleted.")
         }
-        .sheet(isPresented: $viewModel.showShareSheet) {
-            if let url = viewModel.exportFileURL {
-                ShareSheet(items: [url])
-            }
-        }
         .onChange(of: viewModel.selectedPhoto) { oldValue, newValue in
             if newValue != nil {
                 viewModel.handlePhotoSelection()
             }
         }
     }
-}
-
-// Share sheet for iOS
-struct ShareSheet: UIViewControllerRepresentable {
-    let items: [Any]
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
-        return controller
-    }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview {

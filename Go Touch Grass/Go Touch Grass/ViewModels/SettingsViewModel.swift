@@ -35,8 +35,6 @@ class SettingsViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     @Published var showDeleteAccountAlert = false
-    @Published var showShareSheet = false
-    @Published var exportFileURL: URL?
 
     private var supabaseManager: SupabaseManager
     private var currentUserId: UUID?
@@ -210,46 +208,6 @@ class SettingsViewModel: ObservableObject {
                 await MainActor.run {
                     isPrivate = !isPrivate
                 }
-            }
-        }
-    }
-
-    // MARK: - Export Activities
-
-    func exportActivities() {
-        guard let userId = currentUserId else { return }
-
-        Task {
-            do {
-                // Fetch all user activities
-                let activities = try await supabaseManager.fetchUserActivities(userId: userId, limit: 1000)
-
-                // Generate CSV content
-                var csvText = "Activity Type,Notes,Location,Timestamp,Likes\n"
-
-                for activity in activities {
-                    let type = activity.activityType.rawValue
-                    let notes = (activity.notes ?? "").replacingOccurrences(of: ",", with: ";")
-                    let location = activity.location?.name ?? ""
-                    let timestamp = ISO8601DateFormatter().string(from: activity.timestamp)
-                    let likes = "\(activity.likeCount)"
-
-                    csvText += "\(type),\(notes),\(location),\(timestamp),\(likes)\n"
-                }
-
-                // Save to temporary file
-                let tempDir = FileManager.default.temporaryDirectory
-                let fileName = "activities_\(Date().timeIntervalSince1970).csv"
-                let fileURL = tempDir.appendingPathComponent(fileName)
-
-                try csvText.write(to: fileURL, atomically: true, encoding: .utf8)
-
-                // Show share sheet
-                exportFileURL = fileURL
-                showShareSheet = true
-            } catch {
-                errorMessage = "Failed to export activities: \(error.localizedDescription)"
-                showErrorAlert = true
             }
         }
     }
