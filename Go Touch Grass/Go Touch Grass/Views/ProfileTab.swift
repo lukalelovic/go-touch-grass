@@ -18,11 +18,26 @@ struct ProfileTab: View {
 
         NavigationStack {
             ZStack {
-                colors.primaryBackground
-                    .ignoresSafeArea()
+                NatureBackgroundView()
 
                 ScrollView {
-                    VStack(spacing: 20) {
+                    VStack(spacing: AppSpacing.md) {
+                        // Custom header like TouchGrassTab
+                        VStack(alignment: .leading, spacing: AppSpacing.xxs) {
+                            Text("Profile")
+                                .font(.grassTitle)
+                                .foregroundStyle(colors.primaryText)
+                            
+                            if let username = viewModel.currentUser?.username {
+                                Text("@\(username)")
+                                    .font(.grassSubheadline)
+                                    .foregroundStyle(colors.secondaryText)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                        .padding(.top, AppSpacing.xs)
+                        
                         // User Info Card
                         if let currentUser = viewModel.currentUser {
                             VStack(spacing: 12) {
@@ -338,9 +353,8 @@ struct ProfileTab: View {
                     .padding()
                 }
             }
-            .navigationTitle("Profile")
-            .toolbarBackground(colors.primaryBackground, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .task(id: refreshTrigger) {
                 viewModel.updateSupabaseManager(supabaseManager)

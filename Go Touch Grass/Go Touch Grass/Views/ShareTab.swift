@@ -17,11 +17,23 @@ struct ShareTab: View {
 
         NavigationStack {
             ZStack {
-                colors.primaryBackground
-                    .ignoresSafeArea()
+                NatureBackgroundView()
 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: AppSpacing.md) {
+                        // Custom header like TouchGrassTab
+                        VStack(alignment: .leading, spacing: AppSpacing.xxs) {
+                            Text("Share")
+                                .font(.grassTitle)
+                                .foregroundStyle(colors.primaryText)
+                            
+                            Text("Log your outdoor activity")
+                                .font(.grassSubheadline)
+                                .foregroundStyle(colors.secondaryText)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, AppSpacing.xs)
+                        
                         // Activity Type Picker
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Activity Type")
@@ -204,9 +216,8 @@ struct ShareTab: View {
                     .padding()
                 }
             }
-            .navigationTitle("Share")
-            .toolbarBackground(colors.primaryBackground, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .sheet(isPresented: $viewModel.showLocationPicker) {
                 LocationPickerView(selectedLocation: $viewModel.selectedLocation)

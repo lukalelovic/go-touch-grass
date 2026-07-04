@@ -17,12 +17,12 @@ struct TouchGrassTab: View {
 
         NavigationStack {
             ZStack {
-                colors.primaryBackground
-                    .ignoresSafeArea()
+                // Nature background
+                NatureBackgroundView()
 
                 ScrollView {
-                    VStack(spacing: 20) {
-                        // Header
+                    VStack(spacing: AppSpacing.md) {
+                        // Header with enhanced typography
                         headerView(colors: colors)
 
                         // Progress indicator
@@ -67,14 +67,22 @@ struct TouchGrassTab: View {
 
     @ViewBuilder
     private func previewText(colors: AppColors) -> some View {
-        if viewModel.completedCount > 0 {
-            Text("Nice work! You've touched grass today!")
-                .font(.subheadline)
-                .foregroundStyle(colors.accent)
-        } else {
-            Text("Get outside — you've got \(viewModel.totalCount) activities waiting!")
-                .font(.subheadline)
-                .foregroundStyle(colors.secondaryText)
+        HStack(spacing: AppSpacing.xxxs) {
+            if viewModel.completedCount > 0 {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.grassCaption)
+                    .foregroundStyle(colors.accent)
+                Text("Nice work! You've touched grass today!")
+                    .font(.grassSubheadline)
+                    .foregroundStyle(colors.accent)
+            } else {
+                Image(systemName: "leaf.fill")
+                    .font(.grassCaption)
+                    .foregroundStyle(colors.secondaryText)
+                Text("Get outside — you've got \(viewModel.totalCount) activities waiting!")
+                    .font(.grassSubheadline)
+                    .foregroundStyle(colors.secondaryText)
+            }
         }
     }
 
@@ -82,18 +90,18 @@ struct TouchGrassTab: View {
 
     @ViewBuilder
     private func headerView(colors: AppColors) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: AppSpacing.xxs) {
             Text("Today's Activities")
-                .font(.title2)
-                .fontWeight(.bold)
+                .font(.grassTitle)
                 .foregroundStyle(colors.primaryText)
 
             Text(formattedDate())
-                .font(.subheadline)
+                .font(.grassSubheadline)
                 .foregroundStyle(colors.secondaryText)
 
             if viewModel.hasRecommendations {
                 previewText(colors: colors)
+                    .padding(.top, AppSpacing.xxxs)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -103,45 +111,52 @@ struct TouchGrassTab: View {
 
     @ViewBuilder
     private func progressView(colors: AppColors) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Progress")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(colors.primaryText)
+        GlassCard(isInteractive: false) {
+            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
+                HStack {
+                    Text("Progress")
+                        .font(.grassHeadline)
+                        .foregroundStyle(colors.primaryText)
 
-                Spacer()
+                    Spacer()
 
-                Text("\(viewModel.completedCount)/\(viewModel.totalCount) completed")
-                    .font(.caption)
-                    .foregroundStyle(colors.secondaryText)
-            }
+                    Text("\(viewModel.completedCount)/\(viewModel.totalCount) completed")
+                        .font(.grassCaption)
+                        .foregroundStyle(colors.secondaryText)
+                }
 
-            // Progress bar
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Rectangle()
-                        .fill(colors.secondaryCardBackground)
-                        .frame(height: 8)
-                        .cornerRadius(4)
+                // Enhanced progress bar with gradient
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(colors.secondaryCardBackground)
+                            .frame(height: 10)
 
-                    if viewModel.totalCount > 0 {
-                        Rectangle()
-                            .fill(colors.accent)
-                            .frame(
-                                width: geometry.size.width * CGFloat(viewModel.completedCount) / CGFloat(viewModel.totalCount),
-                                height: 8
-                            )
-                            .cornerRadius(4)
-                            .animation(.easeInOut, value: viewModel.completedCount)
+                        if viewModel.totalCount > 0 {
+                            Capsule()
+                                .fill(colors.accentGradient)
+                                .frame(
+                                    width: geometry.size.width * CGFloat(viewModel.completedCount) / CGFloat(viewModel.totalCount),
+                                    height: 10
+                                )
+                                .animation(.spring(response: 0.8, dampingFraction: 0.7), value: viewModel.completedCount)
+                            
+                            // Glow effect when progress is high
+                            if Double(viewModel.completedCount) / Double(viewModel.totalCount) > 0.5 {
+                                Capsule()
+                                    .fill(colors.accentGlow)
+                                    .frame(
+                                        width: geometry.size.width * CGFloat(viewModel.completedCount) / CGFloat(viewModel.totalCount),
+                                        height: 10
+                                    )
+                                    .blur(radius: 4)
+                            }
+                        }
                     }
                 }
+                .frame(height: 10)
             }
-            .frame(height: 8)
         }
-        .padding(16)
-        .background(colors.cardBackground)
-        .cornerRadius(12)
     }
 
     // MARK: - Recommendation Cards
@@ -162,123 +177,100 @@ struct TouchGrassTab: View {
 
     @ViewBuilder
     private func loadingView() -> some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.5)
-                .padding()
-
-            Text("Loading your activities...")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+        VStack(spacing: AppSpacing.sm) {
+            SkeletonCard()
+            SkeletonCard()
+            SkeletonCard()
         }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 60)
     }
 
     // MARK: - Error View
 
     @ViewBuilder
     private func errorView(error: String, colors: AppColors) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(.orange)
+        GlassCard {
+            VStack(spacing: AppSpacing.sm) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.orange)
 
-            Text("Oops!")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundStyle(colors.primaryText)
+                Text("Oops!")
+                    .font(.grassTitle2)
+                    .foregroundStyle(colors.primaryText)
 
-            Text(error)
-                .font(.body)
-                .foregroundStyle(colors.secondaryText)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+                Text(error)
+                    .font(.grassBody)
+                    .foregroundStyle(colors.secondaryText)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
 
-            Button(action: {
-                Task {
-                    await viewModel.loadTodaysRecommendations()
+                AnimatedButton("Try Again", icon: "arrow.clockwise", hierarchy: .primary) {
+                    Task {
+                        await viewModel.loadTodaysRecommendations()
+                    }
                 }
-            }) {
-                Text("Try Again")
-                    .fontWeight(.medium)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
+                .padding(.top, AppSpacing.xxs)
             }
-            .buttonStyle(.borderedProminent)
+            .padding(.vertical, AppSpacing.sm)
         }
-        .padding()
     }
 
     // MARK: - Empty State View
 
     @ViewBuilder
     private func emptyStateView(colors: AppColors) -> some View {
-        VStack(spacing: 20) {
-            Image(systemName: "sun.max.fill")
-                .font(.system(size: 60))
-                .foregroundStyle(colors.accent)
-                .padding()
+        GlassCard {
+            VStack(spacing: AppSpacing.md) {
+                Image(systemName: "sun.max.fill")
+                    .font(.system(size: 60))
+                    .foregroundStyle(colors.sunshine)
+                    .shadow(color: colors.sunshine.opacity(0.3), radius: 8, x: 0, y: 4)
 
-            Text("No Activities Yet")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundStyle(colors.primaryText)
+                Text("No Activities Yet")
+                    .font(.grassTitle2)
+                    .foregroundStyle(colors.primaryText)
 
-            Text("We're preparing personalized outdoor activity recommendations for you. Check back soon!")
-                .font(.body)
-                .foregroundStyle(colors.secondaryText)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
+                Text("We're preparing personalized outdoor activity recommendations for you. Check back soon!")
+                    .font(.grassBody)
+                    .foregroundStyle(colors.secondaryText)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, AppSpacing.md)
 
-            Button(action: {
-                Task {
-                    await viewModel.loadTodaysRecommendations()
+                AnimatedButton("Refresh", icon: "arrow.clockwise", hierarchy: .primary) {
+                    Task {
+                        await viewModel.loadTodaysRecommendations()
+                    }
                 }
-            }) {
-                Text("Refresh")
-                    .fontWeight(.medium)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
+                .padding(.top, AppSpacing.xxs)
             }
-            .buttonStyle(.borderedProminent)
-            .padding(.top, 8)
+            .padding(.vertical, AppSpacing.md)
         }
-        .padding(.top, 40)
     }
 
     // MARK: - Refresh Button
 
     @ViewBuilder
     private func refreshButton(colors: AppColors) -> some View {
-        VStack(spacing: 8) {
-            Button(action: {
+        VStack(spacing: AppSpacing.xxs) {
+            AnimatedButton(
+                "Get New Activities",
+                icon: "arrow.clockwise",
+                hierarchy: .secondary
+            ) {
                 Task {
                     await viewModel.refreshRecommendations()
                 }
-            }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "arrow.clockwise")
-                    Text("Get New Activities")
-                }
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundStyle(colors.primaryBackground)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(.white)
-                .cornerRadius(20)
             }
             .disabled(viewModel.isLoading || !viewModel.canRefresh)
             .opacity(viewModel.canRefresh ? 1.0 : 0.5)
 
             if viewModel.refreshesRemaining > 0 {
                 Text("\(viewModel.refreshesRemaining) refreshes remaining today")
-                    .font(.caption)
+                    .font(.grassCaption)
                     .foregroundStyle(colors.secondaryText)
             } else {
                 Text("No refreshes remaining today")
-                    .font(.caption)
+                    .font(.grassCaption)
                     .foregroundStyle(.red)
             }
         }

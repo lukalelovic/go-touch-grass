@@ -12,99 +12,146 @@ struct ActivityRecommendationCard: View {
     let recommendation: ActivityRecommendation
     let onLog: () -> Void
     @EnvironmentObject var themeManager: ThemeManager
+    
+    @State private var isPressed = false
 
     var body: some View {
         let colors = AppColors()
         
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: AppSpacing.xs) {
             // Activity type header
-            HStack(spacing: 8) {
+            HStack(spacing: AppSpacing.xxs) {
                 if let activityType = recommendation.activityType,
                    let icon = activityType.icon {
                     Image(systemName: icon)
-                        .font(.subheadline)
-                        .foregroundStyle(colors.secondaryText)
+                        .font(.grassCaption)
+                        .foregroundStyle(colors.accent)
                 }
 
                 Text(recommendation.activityType?.name ?? "Activity")
-                    .font(.subheadline)
+                    .font(.grassCaption)
                     .foregroundStyle(colors.secondaryText)
+                    .textCase(.uppercase)
 
                 Spacer()
 
-                // Logged badge
+                // Logged badge with glow
                 if recommendation.wasLogged {
                     HStack(spacing: 4) {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.caption)
+                            .font(.grassCaption)
                         Text("Done")
-                            .font(.caption)
+                            .font(.grassCaption)
                     }
                     .foregroundStyle(colors.accent)
+                    .padding(.horizontal, AppSpacing.xxs)
+                    .padding(.vertical, AppSpacing.xxxs)
+                    .background(
+                        Capsule()
+                            .fill(colors.accentGlow)
+                    )
                 }
             }
 
-            // Activity prompt
+            // Activity prompt with enhanced typography
             Text(recommendation.personalizedPrompt)
-                .font(.title3)
-                .fontWeight(.semibold)
+                .font(.grassTitle3)
                 .foregroundStyle(colors.primaryText)
                 .lineLimit(3)
+                .padding(.vertical, AppSpacing.xxxs)
 
-            // Challenge (if exists)
+            // Challenge with better styling
             if let challenge = recommendation.personalizedChallenge {
-                Text(challenge)
-                    .font(.body)
-                    .foregroundStyle(colors.secondaryText)
-                    .lineLimit(2)
+                HStack(spacing: AppSpacing.xxxs) {
+                    Image(systemName: "target")
+                        .font(.grassCaption)
+                        .foregroundStyle(colors.accent)
+                    
+                    Text(challenge)
+                        .font(.grassBody)
+                        .foregroundStyle(colors.secondaryText)
+                        .lineLimit(2)
+                }
             }
 
             Divider()
                 .background(colors.divider)
+                .padding(.vertical, AppSpacing.xxxs)
 
             // Duration and action button
             HStack {
-                // Duration badge
+                // Duration badge with icon
                 if let duration = recommendation.estimatedDurationMinutes {
                     HStack(spacing: 4) {
-                        Image(systemName: "clock")
-                            .font(.caption)
+                        Image(systemName: "clock.fill")
+                            .font(.grassCaption)
                         Text("\(duration) min")
-                            .font(.caption)
+                            .font(.grassCaption)
                     }
-                    .foregroundStyle(colors.secondaryText)
+                    .foregroundStyle(colors.tertiaryText)
+                    .padding(.horizontal, AppSpacing.xxs)
+                    .padding(.vertical, AppSpacing.xxxs)
+                    .background(
+                        Capsule()
+                            .fill(colors.glassOverlay)
+                    )
                 }
 
                 Spacer()
 
-                // Touched Grass button
-                Button(action: onLog) {
+                // Enhanced button with animation
+                Button(action: {
+                    let impact = UIImpactFeedbackGenerator(style: .medium)
+                    impact.impactOccurred()
+                    onLog()
+                }) {
                     HStack(spacing: 6) {
-                        Image(systemName: recommendation.wasLogged ? "checkmark.circle.fill" : "plus.circle.fill")
-                            .font(.subheadline)
-                        Text(recommendation.wasLogged ? "Completed" : "Touched Grass")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
+                        Image(systemName: recommendation.wasLogged ? "checkmark.circle.fill" : "leaf.fill")
+                            .font(.grassBodyEmphasized)
+                        Text(recommendation.wasLogged ? "Completed" : "Touch Grass")
+                            .font(.grassBodyEmphasized)
                     }
-                    .foregroundColor(recommendation.wasLogged ? .white.opacity(0.7) : colors.primaryBackground)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(recommendation.wasLogged ? Color.gray : .white)
-                    .cornerRadius(8)
+                    .foregroundColor(recommendation.wasLogged ? colors.tertiaryText : colors.primaryBackground)
+                    .padding(.horizontal, AppSpacing.sm)
+                    .padding(.vertical, AppSpacing.xxs)
+                    .background {
+                        if recommendation.wasLogged {
+                            Capsule()
+                                .fill(colors.divider)
+                        } else {
+                            Capsule()
+                                .fill(colors.accentGradient)
+                        }
+                    }
                 }
                 .disabled(recommendation.wasLogged)
+                .scaleEffect(isPressed ? 0.95 : 1.0)
+                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { _ in isPressed = true }
+                        .onEnded { _ in isPressed = false }
+                )
             }
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(colors.cardBackground)
-                .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(recommendation.wasLogged ? colors.accent.opacity(0.5) : Color.clear, lineWidth: 2)
-        )
+        .padding(AppSpacing.sm)
+        .background {
+            RoundedRectangle(cornerRadius: AppRadius.md)
+                .fill(colors.cardGradient)
+                .overlay {
+                    if recommendation.wasLogged {
+                        RoundedRectangle(cornerRadius: AppRadius.md)
+                            .stroke(colors.accent.opacity(0.3), lineWidth: 1)
+                    }
+                }
+                .shadow(
+                    color: AppShadow.md.color,
+                    radius: AppShadow.md.radius,
+                    x: AppShadow.md.x,
+                    y: AppShadow.md.y
+                )
+        }
+        .glassEffect(.regular.interactive(!recommendation.wasLogged), in: .rect(cornerRadius: AppRadius.md))
     }
 }
 
