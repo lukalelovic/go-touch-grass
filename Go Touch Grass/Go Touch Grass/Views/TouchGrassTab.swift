@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import WidgetKit
 
 struct TouchGrassTab: View {
     @StateObject private var viewModel = RecommendationViewModel()
@@ -59,15 +60,21 @@ struct TouchGrassTab: View {
                 Task {
                     await viewModel.loadTodaysRecommendations()
 
-                    // Start Live Activity for first incomplete recommendation
-                    if let firstRec = viewModel.todaysRecommendations.first(where: { !$0.wasLogged }) {
-                        await LiveActivityManager.shared.startLiveActivity(
-                            recommendationId: firstRec.id.uuidString,
-                            activityType: firstRec.activityType?.name ?? "Activity",
-                            prompt: firstRec.personalizedPrompt,
-                            icon: firstRec.activityType?.icon ?? "leaf.fill",
-                            duration: firstRec.estimatedDurationMinutes
-                        )
+                    // Get first recommendation for widget and Live Activity
+                    if let firstRec = viewModel.todaysRecommendations.first {
+                        // Update widget data in shared storage
+                        updateWidgetData(recommendation: firstRec)
+
+                        // Start Live Activity if not completed
+                        if !firstRec.wasLogged {
+                            await LiveActivityManager.shared.startLiveActivity(
+                                recommendationId: firstRec.id.uuidString,
+                                activityType: firstRec.activityType?.name ?? "Activity",
+                                prompt: firstRec.personalizedPrompt,
+                                icon: firstRec.activityType?.icon ?? "leaf.fill",
+                                duration: firstRec.estimatedDurationMinutes
+                            )
+                        }
                     }
                 }
             }
@@ -293,6 +300,31 @@ struct TouchGrassTab: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEEE, MMMM d"
         return formatter.string(from: Date())
+    }
+
+    private func updateWidgetData(recommendation: ActivityRecommendation) {
+        guard let sharedDefaults = UserDefaults(suiteName: "group.com.touchgrass.app") else {
+            print("❌ Failed to access App Group shared storage")
+            return
+        }
+
+        // Write today's recommendation data for the widget
+        sharedDefaults.set(recommendation.activityType?.name ?? "Activity", forKey: "todayActivityType")
+        sharedDefaults.set(recommendation.personalizedPrompt, forKey: "todayPrompt")
+        sharedDefaults.set(recommendation.activityType?.icon ?? "leaf.fill", forKey: "todayIcon")
+        sharedDefaults.set(recommendation.estimatedDurationMinutes ?? 0, forKey: "todayDuration")
+        sharedDefaults.set(recommendation.wasLogged, forKey: "todayCompleted")
+
+        if recommendation.wasLogged {
+            sharedDefaults.set(Date().timeIntervalSince1970, forKey: "todayCompletedAt")
+        } else {
+            sharedDefaults.set(0, forKey: "todayCompletedAt")
+        }
+
+        print("✅ Updated widget data: \(recommendation.activityType?.name ?? "Activity")")
+
+        // Tell WidgetKit to reload the widget timeline
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }
 

@@ -784,7 +784,7 @@ class SupabaseManager: ObservableObject {
                 file: imageData,
                 options: .init(
                     contentType: "image/jpeg",
-                    upsert: false  // Don't upsert since we're using unique filenames
+                    upsert: true  // Allow overwriting if file exists
                 )
             )
 

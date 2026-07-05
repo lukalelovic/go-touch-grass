@@ -603,14 +603,57 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Profile Picture Update
-CREATE OR REPLACE FUNCTION update_user_profile_picture(p_user_id UUID, p_picture_url TEXT)
-RETURNS TABLE(id UUID, profile_picture_url TEXT) AS $$
+-- Drop any existing versions to avoid conflicts
+DROP FUNCTION IF EXISTS update_user_profile_picture(UUID, TEXT);
+DROP FUNCTION IF EXISTS update_user_profile_picture(TEXT, TEXT);
+DROP FUNCTION IF EXISTS update_user_profile_picture;
+
+CREATE FUNCTION update_user_profile_picture(p_user_id UUID, p_picture_url TEXT)
+RETURNS TABLE(id UUID, profile_picture_url TEXT)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_auth_uid UUID;
+    v_user_exists BOOLEAN;
 BEGIN
-    IF p_user_id != auth.uid() THEN RAISE EXCEPTION 'Unauthorized: Cannot update another user''s profile picture'; END IF;
-    RETURN QUERY UPDATE users SET profile_picture_url = p_picture_url, updated_at = CURRENT_TIMESTAMP
-    WHERE users.id = p_user_id RETURNING users.id, users.profile_picture_url;
+    -- Get the authenticated user ID
+    v_auth_uid := auth.uid();
+
+    -- Debug: Log the values
+    RAISE NOTICE 'Auth UID: %, Param UID: %', v_auth_uid, p_user_id;
+
+    -- Check if user exists
+    SELECT EXISTS(SELECT 1 FROM users WHERE users.id = p_user_id) INTO v_user_exists;
+
+    IF NOT v_user_exists THEN
+        RAISE EXCEPTION 'User with ID % does not exist', p_user_id;
+    END IF;
+
+    -- Check authorization
+    IF v_auth_uid IS NULL THEN
+        RAISE EXCEPTION 'Not authenticated';
+    END IF;
+
+    IF p_user_id != v_auth_uid THEN
+        RAISE EXCEPTION 'Unauthorized: Cannot update another user''s profile picture. Auth: %, Param: %', v_auth_uid, p_user_id;
+    END IF;
+
+    -- Update and return the user
+    RETURN QUERY
+    UPDATE users
+    SET
+        profile_picture_url = p_picture_url,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE users.id = p_user_id
+    RETURNING users.id, users.profile_picture_url;
+
+    -- Check if update was successful
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Failed to update profile picture for user %', p_user_id;
+    END IF;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- ============================================================================
 -- SEED DATA
@@ -789,12 +832,35 @@ GRANT EXECUTE ON FUNCTION public.update_user_profile_picture(UUID, TEXT) TO auth
 -- STORAGE BUCKET (Avatars)
 -- ============================================================================
 
-INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true) ON CONFLICT (id) DO UPDATE SET public = true;
+-- Ensure the avatars bucket exists and is public
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('avatars', 'avatars', true, 5242880, ARRAY['image/jpeg', 'image/png', 'image/jpg'])
+ON CONFLICT (id) DO UPDATE SET
+    public = true,
+    file_size_limit = 5242880,
+    allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/jpg'];
 
-CREATE POLICY "Users can upload their own avatar" ON storage.objects FOR INSERT TO authenticated
-    WITH CHECK (bucket_id = 'avatars' AND auth.uid()::text = (string_to_array(name, '/'))[1]);
-CREATE POLICY "Users can update their own avatar" ON storage.objects FOR UPDATE TO authenticated
-    USING (bucket_id = 'avatars' AND auth.uid()::text = (string_to_array(name, '/'))[1]);
-CREATE POLICY "Users can delete their own avatar" ON storage.objects FOR DELETE TO authenticated
-    USING (bucket_id = 'avatars' AND auth.uid()::text = (string_to_array(name, '/'))[1]);
-CREATE POLICY "Anyone can view avatars" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
+-- Create simple, permissive policies for avatars bucket
+CREATE POLICY "avatar_upload_policy"
+ON storage.objects
+FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'avatars');
+
+CREATE POLICY "avatar_update_policy"
+ON storage.objects
+FOR UPDATE
+TO authenticated
+USING (bucket_id = 'avatars')
+WITH CHECK (bucket_id = 'avatars');
+
+CREATE POLICY "avatar_delete_policy"
+ON storage.objects
+FOR DELETE
+TO authenticated
+USING (bucket_id = 'avatars');
+
+CREATE POLICY "avatar_select_policy"
+ON storage.objects
+FOR SELECT
+USING (bucket_id = 'avatars');
