@@ -59,6 +59,31 @@ Follow your friends to see what they are up to outside, and track your own activ
    - **Secure password change:** Toggle ON (recommended)
 7. Click **Save**
 
+### Widget Extension Setup
+
+1. Select **TouchGrassWidgetExtension** target → **Build Phases** → **Compile Sources**
+2. Verify these files are included: `TouchGrassWidget.swift`, `TouchGrassLiveActivity.swift`, `ThemeManager.swift`, `TouchGrassActivityAttributes.swift`
+3. Select **TouchGrassWidgetExtension** target → **General** → Set Bundle Identifier to `LUKA.Go-Touch-Grass.TouchGrassWidgetExtension`
+4. Select both targets → **Signing & Capabilities** → Add **App Groups** capability → Add group ID: `group.com.touchgrass.app`
+5. Select **Go Touch Grass** (main app) target → **Info** tab → Add key `NSSupportsLiveActivities` (Boolean) → Set to `YES`
+6. Clean Build Folder (⇧⌘K), delete derived data, then rebuild
+7. Widget and Live Activities are now ready to test!
+
+## Previewing the App
+
+### Main App Preview
+1. Open any Swift file with a `#Preview` macro (e.g., `TouchGrassTab.swift`)
+2. Press **⌥⌘↵** (Option+Command+Return) to open the preview canvas
+3. Click the ▶️ play button in the canvas to run an interactive preview
+4. Or press **⌘R** to build and run on simulator/device
+
+### Widget Preview
+1. Open `TouchGrassWidget.swift` or `TouchGrassLiveActivity.swift`
+2. Press **⌥⌘↵** to open the preview canvas
+3. Select widget family (small, medium, circular, rectangular) from the preview controls
+4. To test Live Activities: Run the main app → navigate to Touch Grass tab → Live Activity appears on lock screen
+5. To test widgets: Long-press home screen → tap **+** → search "Touch Grass" → add widget
+
 ## Tech Stack
 | Layer         | Choice                              |
 | ------------- | ----------------------------------- |

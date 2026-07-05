@@ -58,6 +58,17 @@ struct TouchGrassTab: View {
             .onAppear {
                 Task {
                     await viewModel.loadTodaysRecommendations()
+
+                    // Start Live Activity for first incomplete recommendation
+                    if let firstRec = viewModel.todaysRecommendations.first(where: { !$0.wasLogged }) {
+                        await LiveActivityManager.shared.startLiveActivity(
+                            recommendationId: firstRec.id.uuidString,
+                            activityType: firstRec.activityType?.name ?? "Activity",
+                            prompt: firstRec.personalizedPrompt,
+                            icon: firstRec.activityType?.icon ?? "leaf.fill",
+                            duration: firstRec.estimatedDurationMinutes
+                        )
+                    }
                 }
             }
         }

@@ -7,22 +7,89 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B79B4A522FFB13A900A54D3C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B79B4A512FFB13A900A54D3C /* WidgetKit.framework */; };
+		B79B4A542FFB13A900A54D3C /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B79B4A532FFB13A900A54D3C /* SwiftUI.framework */; };
+		B79B4A632FFB13AA00A54D3C /* TouchGrassWidgetExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B79B4A4F2FFB13A900A54D3C /* TouchGrassWidgetExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B7C47AC42F01994A0057CE94 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = B7C47A522F0197A00057CE94 /* Supabase */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		B79B4A612FFB13AA00A54D3C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B7A1800C2EF8F14000F97413 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B79B4A4E2FFB13A900A54D3C;
+			remoteInfo = TouchGrassWidgetExtensionExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B79B4A682FFB13AA00A54D3C /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B79B4A632FFB13AA00A54D3C /* TouchGrassWidgetExtensionExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		B79B4A4F2FFB13A900A54D3C /* TouchGrassWidgetExtensionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TouchGrassWidgetExtensionExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B79B4A512FFB13A900A54D3C /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		B79B4A532FFB13A900A54D3C /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		B7A180142EF8F14000F97413 /* Go Touch Grass.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Go Touch Grass.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		B79B4A782FFB180700A54D3C /* Exceptions for "Go Touch Grass" folder in "TouchGrassWidgetExtensionExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/TouchGrassActivityAttributes.swift,
+			);
+			target = B79B4A4E2FFB13A900A54D3C /* TouchGrassWidgetExtensionExtension */;
+		};
+		B79B4A7D2FFB198A00A54D3C /* Exceptions for "TouchGrassWidgetExtension" folder in "TouchGrassWidgetExtensionExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = B79B4A4E2FFB13A900A54D3C /* TouchGrassWidgetExtensionExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		B79B4A552FFB13A900A54D3C /* TouchGrassWidgetExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B79B4A7D2FFB198A00A54D3C /* Exceptions for "TouchGrassWidgetExtension" folder in "TouchGrassWidgetExtensionExtension" target */,
+			);
+			path = TouchGrassWidgetExtension;
+			sourceTree = "<group>";
+		};
 		B7A180162EF8F14000F97413 /* Go Touch Grass */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B79B4A782FFB180700A54D3C /* Exceptions for "Go Touch Grass" folder in "TouchGrassWidgetExtensionExtension" target */,
+			);
 			path = "Go Touch Grass";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		B79B4A4C2FFB13A900A54D3C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B79B4A542FFB13A900A54D3C /* SwiftUI.framework in Frameworks */,
+				B79B4A522FFB13A900A54D3C /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B7A180112EF8F14000F97413 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -34,10 +101,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		B79B4A502FFB13A900A54D3C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				B79B4A512FFB13A900A54D3C /* WidgetKit.framework */,
+				B79B4A532FFB13A900A54D3C /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		B7A1800B2EF8F14000F97413 = {
 			isa = PBXGroup;
 			children = (
 				B7A180162EF8F14000F97413 /* Go Touch Grass */,
+				B79B4A552FFB13A900A54D3C /* TouchGrassWidgetExtension */,
+				B79B4A502FFB13A900A54D3C /* Frameworks */,
 				B7A180152EF8F14000F97413 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -46,6 +124,7 @@
 			isa = PBXGroup;
 			children = (
 				B7A180142EF8F14000F97413 /* Go Touch Grass.app */,
+				B79B4A4F2FFB13A900A54D3C /* TouchGrassWidgetExtensionExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -53,6 +132,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		B79B4A4E2FFB13A900A54D3C /* TouchGrassWidgetExtensionExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B79B4A652FFB13AA00A54D3C /* Build configuration list for PBXNativeTarget "TouchGrassWidgetExtensionExtension" */;
+			buildPhases = (
+				B79B4A4B2FFB13A900A54D3C /* Sources */,
+				B79B4A4C2FFB13A900A54D3C /* Frameworks */,
+				B79B4A4D2FFB13A900A54D3C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				B79B4A552FFB13A900A54D3C /* TouchGrassWidgetExtension */,
+			);
+			name = TouchGrassWidgetExtensionExtension;
+			packageProductDependencies = (
+			);
+			productName = TouchGrassWidgetExtensionExtension;
+			productReference = B79B4A4F2FFB13A900A54D3C /* TouchGrassWidgetExtensionExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		B7A180132EF8F14000F97413 /* Go Touch Grass */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = B7A1801F2EF8F14200F97413 /* Build configuration list for PBXNativeTarget "Go Touch Grass" */;
@@ -60,10 +161,12 @@
 				B7A180102EF8F14000F97413 /* Sources */,
 				B7A180112EF8F14000F97413 /* Frameworks */,
 				B7A180122EF8F14000F97413 /* Resources */,
+				B79B4A682FFB13AA00A54D3C /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				B79B4A622FFB13AA00A54D3C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				B7A180162EF8F14000F97413 /* Go Touch Grass */,
@@ -86,6 +189,9 @@
 				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
+					B79B4A4E2FFB13A900A54D3C = {
+						CreatedOnToolsVersion = 26.2;
+					};
 					B7A180132EF8F14000F97413 = {
 						CreatedOnToolsVersion = 26.2;
 					};
@@ -109,11 +215,19 @@
 			projectRoot = "";
 			targets = (
 				B7A180132EF8F14000F97413 /* Go Touch Grass */,
+				B79B4A4E2FFB13A900A54D3C /* TouchGrassWidgetExtensionExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		B79B4A4D2FFB13A900A54D3C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B7A180122EF8F14000F97413 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -124,6 +238,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		B79B4A4B2FFB13A900A54D3C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B7A180102EF8F14000F97413 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -133,7 +254,73 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		B79B4A622FFB13AA00A54D3C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B79B4A4E2FFB13A900A54D3C /* TouchGrassWidgetExtensionExtension */;
+			targetProxy = B79B4A612FFB13AA00A54D3C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		B79B4A662FFB13AA00A54D3C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TouchGrassWidgetExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TouchGrassWidgetExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "LUKA.Go-Touch-Grass.TouchGrassWidgetExtension-";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B79B4A672FFB13AA00A54D3C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TouchGrassWidgetExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TouchGrassWidgetExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "LUKA.Go-Touch-Grass.TouchGrassWidgetExtension-";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		B7A1801D2EF8F14200F97413 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -320,6 +507,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		B79B4A652FFB13AA00A54D3C /* Build configuration list for PBXNativeTarget "TouchGrassWidgetExtensionExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B79B4A662FFB13AA00A54D3C /* Debug */,
+				B79B4A672FFB13AA00A54D3C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		B7A1800F2EF8F14000F97413 /* Build configuration list for PBXProject "Go Touch Grass" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

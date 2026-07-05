@@ -103,6 +103,12 @@ struct ActivityRecommendationCard: View {
                 Button(action: {
                     let impact = UIImpactFeedbackGenerator(style: .medium)
                     impact.impactOccurred()
+
+                    // Mark Live Activity as complete
+                    Task {
+                        await LiveActivityManager.shared.markActivityCompleted()
+                    }
+
                     onLog()
                 }) {
                     HStack(spacing: 6) {
