@@ -79,7 +79,7 @@ struct AnimatedButton: View {
     private func foregroundColor(_ colors: AppColors) -> Color {
         switch hierarchy {
         case .primary:
-            return colors.primaryBackground
+            return Color(red: 0.10, green: 0.18, blue: 0.08)
         case .secondary, .tertiary:
             return colors.accent
         }

@@ -91,7 +91,7 @@ struct ContentView: View {
                         .padding(.bottom, AppSpacing.xs)
                         .background {
                             // Static dark green background
-                            Color(red: 0.11, green: 0.22, blue: 0.18)
+                            Color(red: 0.28, green: 0.50, blue: 0.20)
                                 .opacity(0.95)
                                 .ignoresSafeArea(edges: .bottom)
                         }
@@ -103,6 +103,7 @@ struct ContentView: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
         .onAppear {
             // Give the auth state listener a moment to check for session
             Task {

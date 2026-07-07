@@ -42,7 +42,7 @@ struct FeedTab: View {
                                 .frame(width: 44, height: 44)
                                 .background {
                                     Circle()
-                                        .fill(Color(red: 0.11, green: 0.22, blue: 0.18).opacity(0.9))
+                                        .fill(Color(red: 0.28, green: 0.50, blue: 0.20).opacity(0.9))
                                 }
                         }
                     }

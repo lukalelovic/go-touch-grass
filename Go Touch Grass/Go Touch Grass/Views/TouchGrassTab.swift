@@ -289,7 +289,7 @@ struct TouchGrassTab: View {
             } else {
                 Text("No refreshes remaining today")
                     .font(.grassCaption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(colors.softRed)
             }
         }
     }

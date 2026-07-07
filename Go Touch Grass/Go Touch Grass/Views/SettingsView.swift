@@ -65,7 +65,7 @@ struct SettingsView: View {
                                             Text("Remove")
                                         }
                                         .font(.subheadline)
-                                        .foregroundColor(.red)
+                                        .foregroundColor(colors.softRed)
                                         .padding(.horizontal, 16)
                                         .padding(.vertical, 8)
                                         .background(colors.cardBackground)
@@ -95,7 +95,7 @@ struct SettingsView: View {
                             if let error = viewModel.usernameError {
                                 Text(error)
                                     .font(.caption)
-                                    .foregroundColor(.red)
+                                    .foregroundColor(colors.softRed)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
 
@@ -152,7 +152,7 @@ struct SettingsView: View {
                     VStack(spacing: 16) {
                         Text("Danger Zone")
                             .font(.headline)
-                            .foregroundColor(.red)
+                            .foregroundColor(colors.softRed)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
                         Button(action: {
@@ -163,7 +163,7 @@ struct SettingsView: View {
                                 Text("Delete Account")
                                 Spacer()
                             }
-                            .foregroundColor(.red)
+                            .foregroundColor(colors.softRed)
                             .padding()
                             .background(colors.cardBackground)
                             .cornerRadius(12)

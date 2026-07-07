@@ -24,55 +24,55 @@ class ThemeManager: ObservableObject {
 struct AppColors {
     let isDarkMode: Bool
 
-    // Background colors - Enhanced earthy dark green tones
+    // Background colors - Bright, lively warm greens inspired by landing page
     var primaryBackground: Color {
-        Color(red: 0.11, green: 0.22, blue: 0.18) // #1C3830 - Deeper forest green
+        Color(red: 0.30, green: 0.55, blue: 0.22) // #4D8C38 - Vibrant medium warm green
     }
     
     var secondaryBackground: Color {
-        Color(red: 0.14, green: 0.26, blue: 0.21) // Slightly lighter forest
+        Color(red: 0.35, green: 0.62, blue: 0.27) // #599E45 - Slightly lighter warm green
     }
 
     var cardBackground: Color {
-        Color(red: 0.16, green: 0.30, blue: 0.25).opacity(0.6) // Semi-transparent for glass effect
+        Color.white.opacity(0.1)
     }
 
     var secondaryCardBackground: Color {
-        Color(red: 0.14, green: 0.27, blue: 0.22).opacity(0.5)
+        Color.white.opacity(0.08)
     }
 
     var eventCardBackground: Color {
-        Color(red: 0.18, green: 0.32, blue: 0.27).opacity(0.6)
+        Color.white.opacity(0.1)
     }
 
     // Text colors with better hierarchy
     var primaryText: Color {
-        Color(red: 0.95, green: 0.97, blue: 0.95) // Soft white with slight green tint
+        Color(red: 0.95, green: 0.97, blue: 0.93) // Warm white
     }
 
     var secondaryText: Color {
-        Color(red: 0.85, green: 0.92, blue: 0.88).opacity(0.8) // Muted green-white
+        Color.white.opacity(0.8)
     }
 
     var tertiaryText: Color {
-        Color(red: 0.7, green: 0.8, blue: 0.75).opacity(0.6)
+        Color.white.opacity(0.55)
     }
 
-    // Nature-inspired accent colors
+    // Nature-inspired accent colors (based on landing page warmGreen)
     var accent: Color {
-        Color(red: 0.52, green: 0.85, blue: 0.64) // #84D9A0 - Fresh spring green
+        Color(red: 0.55, green: 0.78, blue: 0.35) // #8CC759 - Landing page warm green
     }
 
     var accentDark: Color {
-        Color(red: 0.42, green: 0.72, blue: 0.54) // Deeper spring green
+        Color(red: 0.42, green: 0.62, blue: 0.25) // #6B9E40 - Deeper warm green
     }
 
     var accentLight: Color {
-        Color(red: 0.68, green: 0.92, blue: 0.76) // Light mint green
+        Color(red: 0.70, green: 0.88, blue: 0.50) // #B3E080 - Light warm green
     }
     
     var accentGlow: Color {
-        Color(red: 0.52, green: 0.85, blue: 0.64).opacity(0.3) // For glow effects
+        Color(red: 0.55, green: 0.78, blue: 0.35).opacity(0.3) // For glow effects
     }
 
     // Additional nature-inspired colors
@@ -88,12 +88,16 @@ struct AppColors {
         Color(red: 0.62, green: 0.49, blue: 0.37) // Earthy brown
     }
 
+    var softRed: Color {
+        Color(red: 0.82, green: 0.32, blue: 0.24) // Warm brick red
+    }
+
     // Gradients for depth and visual interest
     var backgroundGradient: LinearGradient {
         LinearGradient(
             colors: [
                 primaryBackground,
-                Color(red: 0.13, green: 0.24, blue: 0.20)
+                Color(red: 0.28, green: 0.50, blue: 0.20)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing

@@ -79,7 +79,7 @@ struct AuthView: View {
                     if let errorMessage = errorMessage {
                         Text(errorMessage)
                             .font(.caption)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(colors.softRed)
                             .padding(.horizontal)
                     }
 

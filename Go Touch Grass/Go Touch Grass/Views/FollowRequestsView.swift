@@ -168,7 +168,7 @@ struct FollowRequestRow: View {
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(width: 36, height: 36)
-                        .background(Color.red)
+                        .background(colors.softRed)
                         .clipShape(Circle())
                 }
 

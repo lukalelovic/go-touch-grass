@@ -48,7 +48,7 @@ struct ProfilePictureView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: size, height: size)
-                        .foregroundColor(Color(red: 0.2, green: 0.5, blue: 0.2))
+                        .foregroundColor(Color(red: 0.35, green: 0.55, blue: 0.25))
                 }
             } else {
                 // No URL or empty string - show placeholder

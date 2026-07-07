@@ -392,7 +392,7 @@ struct ProfileTab: View {
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(Color.red)
+                                .background(colors.softRed)
                                 .clipShape(Capsule())
                         }
                         Image(systemName: "chevron.right")
@@ -431,7 +431,7 @@ struct ProfileTab: View {
                     Text("Logout")
                     Spacer()
                 }
-                .foregroundColor(.red)
+                .foregroundColor(colors.softRed)
                 .padding()
                 .background(colors.cardBackground)
                 .cornerRadius(12)

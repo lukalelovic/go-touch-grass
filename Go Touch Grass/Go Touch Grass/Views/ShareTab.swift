@@ -101,7 +101,8 @@ struct ShareTab: View {
                                     .frame(height: 120)
                                     .padding(4)
                                     .scrollContentBackground(.hidden)
-                                    .background(colors.cardBackground)
+                                .padding()
+                                .background(colors.cardBackground)
                                     .foregroundColor(colors.primaryText)
                                     .cornerRadius(12)
                                     .overlay(
@@ -175,13 +176,13 @@ struct ShareTab: View {
                         if let errorMessage = viewModel.errorMessage {
                             HStack {
                                 Image(systemName: "exclamationmark.triangle.fill")
-                                    .foregroundColor(.red)
+                                    .foregroundColor(colors.softRed)
                                 Text(errorMessage)
                                     .font(.caption)
-                                    .foregroundColor(.red)
+                                    .foregroundColor(colors.softRed)
                             }
                             .padding()
-                            .background(Color.red.opacity(0.1))
+                            .background(colors.softRed.opacity(0.1))
                             .cornerRadius(8)
                         }
 
@@ -190,17 +191,23 @@ struct ShareTab: View {
                             HStack {
                                 if viewModel.isSaving {
                                     ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: colors.primaryBackground))
+                                        .progressViewStyle(CircularProgressViewStyle(tint: colors.accent))
                                 } else {
                                     Image(systemName: "checkmark.circle.fill")
                                     Text("Share Activity")
                                 }
                             }
                             .font(.headline)
-                            .foregroundColor(colors.primaryBackground)
+                            .foregroundColor(colors.primaryText)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(viewModel.isSaving ? Color.gray : .white)
+                            .background {
+                                if viewModel.isSaving {
+                                    Color.gray
+                                } else {
+                                    colors.accentGradient
+                                }
+                            }
                             .cornerRadius(12)
                         }
                         .disabled(viewModel.isSaving)

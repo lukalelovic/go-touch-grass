@@ -117,7 +117,7 @@ struct ActivityRecommendationCard: View {
                         Text(recommendation.wasLogged ? "Completed" : "Touch Grass")
                             .font(.grassBodyEmphasized)
                     }
-                    .foregroundColor(recommendation.wasLogged ? colors.tertiaryText : colors.primaryBackground)
+                    .foregroundColor(recommendation.wasLogged ? colors.tertiaryText : colors.primaryText)
                     .padding(.horizontal, AppSpacing.sm)
                     .padding(.vertical, AppSpacing.xxs)
                     .background {
@@ -145,6 +145,10 @@ struct ActivityRecommendationCard: View {
             RoundedRectangle(cornerRadius: AppRadius.md)
                 .fill(colors.cardGradient)
                 .overlay {
+                    RoundedRectangle(cornerRadius: AppRadius.md)
+                        .fill(colors.glassOverlay)
+                }
+                .overlay {
                     if recommendation.wasLogged {
                         RoundedRectangle(cornerRadius: AppRadius.md)
                             .stroke(colors.accent.opacity(0.3), lineWidth: 1)
@@ -157,7 +161,6 @@ struct ActivityRecommendationCard: View {
                     y: AppShadow.md.y
                 )
         }
-        .glassEffect(.regular.interactive(!recommendation.wasLogged), in: .rect(cornerRadius: AppRadius.md))
     }
 }
 

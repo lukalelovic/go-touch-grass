@@ -152,7 +152,7 @@ struct SmallWidgetView: View {
     let entry: ActivityEntry
 
     var accentColor: Color {
-        Color(red: 0.52, green: 0.85, blue: 0.64) // App's accent green
+        Color(red: 0.55, green: 0.78, blue: 0.35) // App's accent warm green
     }
 
     var body: some View {
@@ -194,7 +194,7 @@ struct MediumWidgetView: View {
     let entry: ActivityEntry
 
     var accentColor: Color {
-        Color(red: 0.52, green: 0.85, blue: 0.64) // App's accent green
+        Color(red: 0.55, green: 0.78, blue: 0.35) // App's accent warm green
     }
 
     var body: some View {
