@@ -10,8 +10,13 @@ import MapKit
 
 struct ActivityDetailView: View {
     let activity: Activity
-    @State private var niceCount: Int = 0
+    @StateObject private var viewModel: ActivityDetailViewModel
     @EnvironmentObject var themeManager: ThemeManager
+
+    init(activity: Activity) {
+        self.activity = activity
+        _viewModel = StateObject(wrappedValue: ActivityDetailViewModel(activity: activity))
+    }
 
     var body: some View {
         let colors = AppColors(isDarkMode: themeManager.isDarkMode)
@@ -112,28 +117,39 @@ struct ActivityDetailView: View {
 
                         // "Nice" button
                         Button(action: {
-                            niceCount += 1
+                            viewModel.toggleLike()
                         }) {
                             HStack {
-                                Image(systemName: niceCount > 0 ? "hand.thumbsup.fill" : "hand.thumbsup")
-                                Text("Nice")
-                                if niceCount > 0 {
-                                    Text("(\(niceCount))")
+                                if viewModel.isLoading {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                } else {
+                                    Image(systemName: viewModel.hasLiked ? "hand.thumbsup.fill" : "hand.thumbsup")
+                                    Text("Nice")
+                                    if viewModel.likeCount > 0 {
+                                        Text("(\(viewModel.likeCount))")
+                                    }
                                 }
                             }
                             .font(.headline)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(colors.accentDark)
+                            .background(viewModel.hasLiked ? colors.accent : colors.accentDark)
                             .cornerRadius(12)
                         }
+                        .disabled(viewModel.isLoading)
                     }
                     .padding()
                 }
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            Task {
+                await viewModel.loadLikeState()
+            }
+        }
     }
 
     private func formatDate(_ date: Date) -> String {

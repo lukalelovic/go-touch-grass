@@ -90,25 +90,40 @@ struct ShareTab: View {
                                 .foregroundColor(colors.primaryText)
 
                             ZStack(alignment: .topLeading) {
-                                if viewModel.notes.isEmpty {
-                                    Text("Share your experience...")
-                                        .foregroundColor(colors.secondaryText.opacity(0.5))
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 16)
-                                }
-
-                                TextEditor(text: $viewModel.notes)
-                                    .frame(height: 120)
-                                    .padding(4)
-                                    .scrollContentBackground(.hidden)
-                                .padding()
-                                .background(colors.cardBackground)
-                                    .foregroundColor(colors.primaryText)
-                                    .cornerRadius(12)
+                                // Background and border
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(colors.cardBackground)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
                                             .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                                     )
+
+                                // Placeholder text
+                                if viewModel.notes.isEmpty {
+                                    Text("Share your experience...")
+                                        .foregroundColor(colors.secondaryText.opacity(0.5))
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 16)
+                                        .allowsHitTesting(false)
+                                }
+
+                                // TextEditor
+                                TextEditor(text: $viewModel.notes)
+                                    .frame(height: 120)
+                                    .scrollContentBackground(.hidden)
+                                    .foregroundColor(colors.primaryText)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 12)
+                                    .background(Color.clear)
+                                    .toolbar {
+                                        ToolbarItemGroup(placement: .keyboard) {
+                                            Spacer()
+                                            Button("Done") {
+                                                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                                            }
+                                            .foregroundColor(colors.accent)
+                                        }
+                                    }
                                     .onChange(of: viewModel.notes) { _ in
                                         // Clear error when user starts typing
                                         if viewModel.errorMessage != nil {
@@ -116,6 +131,7 @@ struct ShareTab: View {
                                         }
                                     }
                             }
+                            .frame(height: 120)
                         }
 
                         // Location Picker

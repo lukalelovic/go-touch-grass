@@ -45,17 +45,17 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		B79B4A782FFB180700A54D3C /* Exceptions for "Go Touch Grass" folder in "TouchGrassWidgetExtensionExtension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Models/TouchGrassActivityAttributes.swift,
-			);
-			target = B79B4A4E2FFB13A900A54D3C /* TouchGrassWidgetExtensionExtension */;
-		};
 		B79B4A7D2FFB198A00A54D3C /* Exceptions for "TouchGrassWidgetExtension" folder in "TouchGrassWidgetExtensionExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+			);
+			target = B79B4A4E2FFB13A900A54D3C /* TouchGrassWidgetExtensionExtension */;
+		};
+		B7E447843003FFC200659B34 /* Exceptions for "Go Touch Grass" folder in "TouchGrassWidgetExtensionExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/TouchGrassActivityAttributes.swift,
 			);
 			target = B79B4A4E2FFB13A900A54D3C /* TouchGrassWidgetExtensionExtension */;
 		};
@@ -73,7 +73,7 @@
 		B7A180162EF8F14000F97413 /* Go Touch Grass */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				B79B4A782FFB180700A54D3C /* Exceptions for "Go Touch Grass" folder in "TouchGrassWidgetExtensionExtension" target */,
+				B7E447843003FFC200659B34 /* Exceptions for "Go Touch Grass" folder in "TouchGrassWidgetExtensionExtension" target */,
 			);
 			path = "Go Touch Grass";
 			sourceTree = "<group>";
