@@ -8,6 +8,8 @@
 -- VIEWS
 -- ============================================================================
 
+DROP VIEW IF EXISTS activities_with_stats;
+
 CREATE VIEW activities_with_stats
 WITH (security_invoker = on) AS
 SELECT
@@ -15,6 +17,7 @@ SELECT
     a.activity_type_id, at.name AS activity_type_name, at.icon AS activity_type_icon,
     a.activity_subtype_id, ast.name AS activity_subtype_name,
     a.notes, a.timestamp, a.location_latitude, a.location_longitude, a.location_name,
+    a.recommendation_id,
     COUNT(DISTINCT al.id) AS like_count,
     a.created_at, a.updated_at
 FROM activities a
@@ -25,7 +28,7 @@ LEFT JOIN activity_likes al ON a.id = al.activity_id
 GROUP BY a.id, u.id, u.username, u.email, u.profile_picture_url,
     at.id, at.name, at.icon, ast.id, ast.name,
     a.notes, a.timestamp, a.location_latitude, a.location_longitude, a.location_name,
-    a.created_at, a.updated_at;
+    a.recommendation_id, a.created_at, a.updated_at;
 
 CREATE VIEW user_stats
 WITH (security_invoker = on) AS

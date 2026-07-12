@@ -10,6 +10,8 @@ import MapKit
 
 struct ActivityRowView: View {
     let activity: Activity
+    /// Indicates if this activity was logged from a "Touch Grass" recommendation
+    var isTouchGrassActivity: Bool = false
     
     var body: some View {
         let colors = AppColors()
@@ -27,9 +29,19 @@ struct ActivityRowView: View {
 
                         // User info
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(activity.user.username)
-                                .font(.headline)
-                                .foregroundColor(colors.primaryText)
+                            HStack(spacing: 4) {
+                                Text(activity.user.username)
+                                    .font(.headline)
+                                    .foregroundColor(colors.primaryText)
+                                
+                                // Touch Grass badge
+                                if isTouchGrassActivity {
+                                    Image(systemName: "leaf.fill")
+                                        .font(.caption2)
+                                        .foregroundStyle(colors.accent)
+                                        .shadow(color: colors.accentGlow, radius: 4)
+                                }
+                            }
 
                             HStack(spacing: 4) {
                                 if let icon = activity.activityType.icon {
@@ -39,7 +51,7 @@ struct ActivityRowView: View {
                                 Text(activity.activityType.rawValue)
                                     .font(.subheadline)
                             }
-                            .foregroundColor(colors.secondaryText)
+                            .foregroundColor(isTouchGrassActivity ? colors.accentLight : colors.secondaryText)
                         }
                     }
                 }
@@ -93,8 +105,42 @@ struct ActivityRowView: View {
             }
         }
         .padding(12)
-        .background(colors.cardBackground)
+        .background {
+            if isTouchGrassActivity {
+                // Enhanced background for Touch Grass activities
+                ZStack {
+                    colors.cardBackground
+                    
+                    // Subtle accent gradient overlay
+                    LinearGradient(
+                        colors: [
+                            colors.accent.opacity(0.15),
+                            colors.accent.opacity(0.05)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                }
+            } else {
+                colors.cardBackground
+            }
+        }
         .cornerRadius(12)
+        .overlay {
+            if isTouchGrassActivity {
+                // Special border for Touch Grass activities
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(
+                        LinearGradient(
+                            colors: [colors.accent.opacity(0.6), colors.accentLight.opacity(0.4)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 2
+                    )
+                    .shadow(color: colors.accentGlow, radius: 8, x: 0, y: 2)
+            }
+        }
     }
 
     private func timeAgoString(from date: Date) -> String {

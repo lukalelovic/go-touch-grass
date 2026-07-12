@@ -80,7 +80,10 @@ struct FeedTab: View {
                             LazyVStack(spacing: AppSpacing.xs) {
                                 ForEach(viewModel.activities) { activity in
                                     NavigationLink(destination: ActivityDetailView(activity: activity)) {
-                                        ActivityRowView(activity: activity)
+                                        ActivityRowView(
+                                            activity: activity,
+                                            isTouchGrassActivity: activity.isTouchGrassActivity
+                                        )
                                     }
                                 }
                             }

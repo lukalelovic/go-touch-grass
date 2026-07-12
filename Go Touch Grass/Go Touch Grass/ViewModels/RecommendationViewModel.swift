@@ -125,7 +125,8 @@ class RecommendationViewModel: ObservableObject {
                     activityType: activityType,
                     notes: notes,
                     location: nil,
-                    timestamp: Date()
+                    timestamp: Date(),
+                    recommendationId: recommendation.id
                 )
 
                 // Add to local store so feed updates immediately

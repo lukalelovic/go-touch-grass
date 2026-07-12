@@ -75,12 +75,38 @@ CREATE TABLE activity_subtypes (
     CONSTRAINT unique_subtype_per_type UNIQUE(activity_type_id, name)
 );
 
+-- Daily Activity Recommendations
+CREATE TABLE daily_activity_recommendations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    recommendation_date DATE NOT NULL,
+    activity_template_id INTEGER NOT NULL REFERENCES activity_templates(id) ON DELETE CASCADE,
+    card_position INTEGER NOT NULL CHECK (card_position BETWEEN 1 AND 5),
+    personalized_prompt TEXT NOT NULL,
+    personalized_challenge TEXT,
+    activity_type_id INTEGER NOT NULL REFERENCES activity_types(id) ON DELETE RESTRICT,
+    estimated_duration_minutes INTEGER,
+    was_logged BOOLEAN DEFAULT FALSE,
+    logged_at TIMESTAMP WITH TIME ZONE,
+    activity_posted BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_user_date_position UNIQUE(user_id, recommendation_date, card_position)
+);
+
+CREATE INDEX idx_recommendations_user_date ON daily_activity_recommendations(user_id, recommendation_date);
+CREATE INDEX idx_recommendations_user_id ON daily_activity_recommendations(user_id);
+CREATE INDEX idx_recommendations_date ON daily_activity_recommendations(recommendation_date);
+CREATE INDEX idx_recommendations_template ON daily_activity_recommendations(activity_template_id);
+CREATE INDEX idx_recommendations_logged ON daily_activity_recommendations(was_logged);
+CREATE INDEX idx_recommendations_posted ON daily_activity_recommendations(activity_posted);
+
 -- Activities
 CREATE TABLE activities (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     activity_type_id INTEGER NOT NULL REFERENCES activity_types(id) ON DELETE RESTRICT,
     activity_subtype_id INTEGER REFERENCES activity_subtypes(id) ON DELETE SET NULL,
+    recommendation_id UUID REFERENCES daily_activity_recommendations(id) ON DELETE SET NULL,
     notes TEXT,
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     location_latitude DECIMAL(10, 8),
@@ -96,8 +122,12 @@ CREATE TABLE activities (
 
 CREATE INDEX idx_activities_user_id ON activities(user_id);
 CREATE INDEX idx_activities_activity_type_id ON activities(activity_type_id);
+CREATE INDEX idx_activities_recommendation_id ON activities(recommendation_id);
 CREATE INDEX idx_activities_timestamp ON activities(timestamp DESC);
 CREATE INDEX idx_activities_location ON activities(location_latitude, location_longitude) WHERE location_latitude IS NOT NULL;
+
+COMMENT ON COLUMN activities.recommendation_id IS
+  'Links to the activity_recommendation that prompted this activity, if applicable. Used to identify Touch Grass activities in the feed.';
 
 -- Activity Likes
 CREATE TABLE activity_likes (
@@ -133,31 +163,6 @@ CREATE TABLE activity_templates (
 CREATE INDEX idx_templates_activity_type ON activity_templates(activity_type_id);
 CREATE INDEX idx_templates_active ON activity_templates(is_active) WHERE is_active = TRUE;
 CREATE INDEX idx_templates_difficulty ON activity_templates(difficulty_level);
-
--- Daily Activity Recommendations
-CREATE TABLE daily_activity_recommendations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    recommendation_date DATE NOT NULL,
-    activity_template_id INTEGER NOT NULL REFERENCES activity_templates(id) ON DELETE CASCADE,
-    card_position INTEGER NOT NULL CHECK (card_position BETWEEN 1 AND 5),
-    personalized_prompt TEXT NOT NULL,
-    personalized_challenge TEXT,
-    activity_type_id INTEGER NOT NULL REFERENCES activity_types(id) ON DELETE RESTRICT,
-    estimated_duration_minutes INTEGER,
-    was_logged BOOLEAN DEFAULT FALSE,
-    logged_at TIMESTAMP WITH TIME ZONE,
-    activity_posted BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_user_date_position UNIQUE(user_id, recommendation_date, card_position)
-);
-
-CREATE INDEX idx_recommendations_user_date ON daily_activity_recommendations(user_id, recommendation_date);
-CREATE INDEX idx_recommendations_user_id ON daily_activity_recommendations(user_id);
-CREATE INDEX idx_recommendations_date ON daily_activity_recommendations(recommendation_date);
-CREATE INDEX idx_recommendations_template ON daily_activity_recommendations(activity_template_id);
-CREATE INDEX idx_recommendations_logged ON daily_activity_recommendations(was_logged);
-CREATE INDEX idx_recommendations_posted ON daily_activity_recommendations(activity_posted);
 
 -- User Activity Preferences
 CREATE TABLE user_activity_preferences (

@@ -18,6 +18,7 @@ struct Activity: Identifiable, Codable {
     let likeCount: Int?
     let createdAt: Date?
     let updatedAt: Date?
+    let recommendationId: UUID? // Links to activity_recommendation if this was from a Touch Grass recommendation
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -36,6 +37,7 @@ struct Activity: Identifiable, Codable {
         case likeCount = "like_count"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case recommendationId = "recommendation_id"
     }
 
     init(
@@ -47,7 +49,8 @@ struct Activity: Identifiable, Codable {
         location: Location? = nil,
         likeCount: Int? = nil,
         createdAt: Date? = nil,
-        updatedAt: Date? = nil
+        updatedAt: Date? = nil,
+        recommendationId: UUID? = nil
     ) {
         self.id = id
         self.user = user
@@ -58,6 +61,7 @@ struct Activity: Identifiable, Codable {
         self.likeCount = likeCount
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.recommendationId = recommendationId
     }
 
     // Custom decoder to handle the database view structure
@@ -112,6 +116,7 @@ struct Activity: Identifiable, Codable {
         likeCount = try container.decodeIfPresent(Int.self, forKey: .likeCount)
         createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
         updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
+        recommendationId = try container.decodeIfPresent(UUID.self, forKey: .recommendationId)
     }
 
     // Custom encoder for creating activities
@@ -129,6 +134,14 @@ struct Activity: Identifiable, Codable {
             try container.encode(location.longitude, forKey: .locationLongitude)
             try container.encodeIfPresent(location.name, forKey: .locationName)
         }
+    }
+}
+
+// MARK: - Activity Helpers
+extension Activity {
+    /// Returns true if this activity was logged from a Touch Grass recommendation
+    var isTouchGrassActivity: Bool {
+        return recommendationId != nil
     }
 }
 

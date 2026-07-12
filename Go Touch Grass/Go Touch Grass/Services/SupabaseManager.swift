@@ -262,7 +262,8 @@ class SupabaseManager: ObservableObject {
         activityType: ActivityType,
         notes: String?,
         location: Location?,
-        timestamp: Date = Date()
+        timestamp: Date = Date(),
+        recommendationId: UUID? = nil
     ) async throws -> Activity {
         // Use the activity type ID directly if available (id > 0), otherwise look it up
         let activityTypeId: Int
@@ -294,6 +295,10 @@ class SupabaseManager: ObservableObject {
         if let notes = notes, !notes.isEmpty {
             activityData["notes"] = notes
         }
+        
+        if let recommendationId = recommendationId {
+            activityData["recommendation_id"] = recommendationId.uuidString
+        }
 
         if let location = location {
             activityData["location_latitude"] = location.latitude
@@ -309,6 +314,7 @@ class SupabaseManager: ObservableObject {
             let activityTypeId: Int
             let timestamp: String
             let notes: String?
+            let recommendationId: String?
             let locationLatitude: Double?
             let locationLongitude: Double?
             let locationName: String?
@@ -318,6 +324,7 @@ class SupabaseManager: ObservableObject {
                 case activityTypeId = "activity_type_id"
                 case timestamp
                 case notes
+                case recommendationId = "recommendation_id"
                 case locationLatitude = "location_latitude"
                 case locationLongitude = "location_longitude"
                 case locationName = "location_name"
@@ -333,6 +340,7 @@ class SupabaseManager: ObservableObject {
             activityTypeId: activityTypeId,
             timestamp: ISO8601DateFormatter().string(from: timestamp),
             notes: notes,
+            recommendationId: recommendationId?.uuidString,
             locationLatitude: location?.latitude,
             locationLongitude: location?.longitude,
             locationName: location?.name

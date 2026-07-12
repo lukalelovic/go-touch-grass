@@ -100,6 +100,12 @@ GRANT SELECT ON activity_templates TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON daily_activity_recommendations TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON user_activity_preferences TO authenticated;
 
+-- Views (CRITICAL: Views need explicit SELECT grants!)
+GRANT SELECT ON activities_with_stats TO authenticated, anon;
+GRANT SELECT ON user_stats TO authenticated, anon;
+GRANT SELECT ON user_current_levels TO authenticated, anon;
+GRANT SELECT ON user_badge_progress TO authenticated, anon;
+
 -- Sequence permissions (needed for INSERT operations)
 GRANT USAGE, SELECT ON SEQUENCE activity_templates_id_seq TO authenticated;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
