@@ -42,8 +42,7 @@ Follow your friends to see what they are up to outside, and track your own activ
 
 1. Go to your [Supabase Dashboard](https://supabase.com/dashboard) → **SQL Editor**
 2. Click **New Query**
-3. Run `schemas/schema.sql` (creates all tables, functions, RLS policies, and permissions)
-4. Run `schemas/seed_activity_templates.sql` (adds 50 activity recommendation templates)
+3. Run the schema files in `schemas/` in their prefixed order (creates tables, functions, seed data, policies)
 5. Done! Your database is ready.
 
 ### Email Auth in Supabase
