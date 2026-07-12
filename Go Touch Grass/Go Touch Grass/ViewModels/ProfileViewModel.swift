@@ -198,21 +198,26 @@ class ProfileViewModel: ObservableObject {
     }
 
     private func loadLocalLevelInfo() {
-        // For now, calculate locally from activities
+        // For now, calculate locally from activities using XP system
         guard let currentUser = currentUser else { return }
 
         let totalActivities = userActivities.count
-        let currentMilestone = LevelMilestone.milestoneFor(level: totalActivities)
-        let nextMilestone = LevelMilestone.nextMilestoneFor(level: totalActivities)
+        let totalXp = totalActivities * 10  // 10 XP per activity
+        let currentLevel = max(Int(floor(Double(totalXp) / 50.0)) + 1, 1)  // floor(xp/50) + 1
+        let currentLevelXp = totalXp % 50  // XP within current level
+        let xpToNextLevel = 50 - currentLevelXp  // XP needed for next level
 
-        let activitiesToNext = (nextMilestone?.milestoneLevel ?? 0) - totalActivities
+        let currentMilestone = LevelMilestone.milestoneFor(level: currentLevel)
+        let nextMilestone = LevelMilestone.nextMilestoneFor(level: currentLevel)
+
+        let activitiesToNext = (nextMilestone?.milestoneLevel ?? 0) - currentLevel
         let progressPercent: Double
         if let current = currentMilestone, let next = nextMilestone {
             let range = Double(next.milestoneLevel - current.milestoneLevel)
-            let completed = Double(totalActivities - current.milestoneLevel)
+            let completed = Double(currentLevel - current.milestoneLevel)
             progressPercent = (completed / range) * 100
         } else if nextMilestone != nil {
-            progressPercent = Double(totalActivities) / Double(nextMilestone!.milestoneLevel) * 100
+            progressPercent = Double(currentLevel) / Double(nextMilestone!.milestoneLevel) * 100
         } else {
             progressPercent = 100
         }
@@ -221,7 +226,10 @@ class ProfileViewModel: ObservableObject {
             userId: currentUser.id,
             username: currentUser.username,
             totalActivities: totalActivities,
-            currentLevel: max(totalActivities, 1),
+            totalXp: totalXp,
+            currentLevel: currentLevel,
+            currentLevelXp: currentLevelXp,
+            xpToNextLevel: xpToNextLevel,
             currentMilestoneLevel: currentMilestone?.milestoneLevel,
             milestoneName: currentMilestone?.name,
             milestoneDescription: currentMilestone?.description,

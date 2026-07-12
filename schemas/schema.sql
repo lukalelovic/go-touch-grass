@@ -276,6 +276,7 @@ WITH activity_type_counts AS (
 SELECT
     u.id AS user_id, u.username, u.created_at AS user_created_at,
     COUNT(DISTINCT a.id) AS total_activities,
+    (COUNT(DISTINCT a.id) * 10) AS total_xp,
     COUNT(DISTINCT DATE(a.timestamp)) AS total_active_days,
     COALESCE((SELECT jsonb_object_agg(activity_type_name, activity_count)
              FROM activity_type_counts atc WHERE atc.user_id = u.id), '{}'::jsonb) AS activities_by_type,
@@ -298,8 +299,8 @@ GROUP BY u.id, u.username, u.created_at;
 CREATE VIEW user_current_levels
 WITH (security_invoker = on) AS
 SELECT
-    us.user_id, us.username, us.total_activities,
-    GREATEST(us.total_activities, 1) AS current_level,
+    us.user_id, us.username, us.total_activities, us.total_xp,
+    GREATEST(FLOOR(us.total_xp / 50.0) + 1, 1) AS current_level,
     current_milestone.milestone_level AS current_milestone_level,
     current_milestone.name AS milestone_name,
     current_milestone.description AS milestone_description,
@@ -307,20 +308,22 @@ SELECT
     next_milestone.milestone_level AS next_milestone_level,
     next_milestone.name AS next_milestone_name,
     next_milestone.icon AS next_milestone_icon,
-    GREATEST(0, COALESCE(next_milestone.milestone_level, 0) - us.total_activities) AS activities_to_next_milestone,
+    (50 - (us.total_xp % 50)) AS xp_to_next_level,
+    (us.total_xp % 50) AS current_level_xp,
+    GREATEST(0, COALESCE(next_milestone.milestone_level, 0) - GREATEST(FLOOR(us.total_xp / 50.0) + 1, 1)) AS activities_to_next_milestone,
     CASE
         WHEN next_milestone.milestone_level IS NULL THEN 100
         WHEN next_milestone.milestone_level <= COALESCE(current_milestone.milestone_level, 0) THEN 100
         ELSE ROUND(
-            ((us.total_activities - COALESCE(current_milestone.milestone_level, 0))::NUMERIC /
+            ((GREATEST(FLOOR(us.total_xp / 50.0) + 1, 1) - COALESCE(current_milestone.milestone_level, 0))::NUMERIC /
             (next_milestone.milestone_level - COALESCE(current_milestone.milestone_level, 0))::NUMERIC * 100), 2)
     END AS progress_to_next_milestone
 FROM user_stats us
-LEFT JOIN level_milestones current_milestone ON us.total_activities >= current_milestone.milestone_level
+LEFT JOIN level_milestones current_milestone ON GREATEST(FLOOR(us.total_xp / 50.0) + 1, 1) >= current_milestone.milestone_level
     AND current_milestone.milestone_level = (
-        SELECT MAX(milestone_level) FROM level_milestones WHERE milestone_level <= us.total_activities)
+        SELECT MAX(milestone_level) FROM level_milestones WHERE milestone_level <= GREATEST(FLOOR(us.total_xp / 50.0) + 1, 1))
 LEFT JOIN level_milestones next_milestone ON next_milestone.id = (
-    SELECT MIN(id) FROM level_milestones WHERE milestone_level > us.total_activities);
+    SELECT MIN(id) FROM level_milestones WHERE milestone_level > GREATEST(FLOOR(us.total_xp / 50.0) + 1, 1));
 
 CREATE VIEW user_badge_progress
 WITH (security_invoker = on) AS
@@ -662,13 +665,13 @@ $$;
 -- Level Milestones
 INSERT INTO level_milestones (milestone_level, name, description, icon) VALUES
     (1, 'Sprout', 'Taking your first steps outdoors', 'leaf.fill'),
-    (5, 'Seedling', 'Starting to grow', 'leaf.circle.fill'),
-    (10, 'Grass Toucher', 'Getting comfortable outside', 'tree.fill'),
-    (25, 'Enthusiast', 'A regular outdoor enthusiast', 'tree.circle.fill'),
-    (50, 'Explorer', 'Exploring new paths', 'figure.hiking'),
-    (75, 'Naturalist', 'Dedicated to outdoor life', 'globe.americas.fill'),
-    (100, 'Trailblazer', 'Master of outdoor activities', 'mountain.2.fill'),
-    (500, 'Legend', 'An inspiration to all', 'sparkles');
+    (5, 'Seedling', 'Starting to grow (25 activities)', 'leaf.circle.fill'),
+    (10, 'Grass Toucher', 'Getting comfortable outside (50 activities)', 'tree.fill'),
+    (25, 'Enthusiast', 'A regular outdoor enthusiast (125 activities)', 'tree.circle.fill'),
+    (50, 'Explorer', 'Exploring new paths (250 activities)', 'figure.hiking'),
+    (75, 'Naturalist', 'Dedicated to outdoor life (375 activities)', 'globe.americas.fill'),
+    (100, 'Trailblazer', 'Master of outdoor activities (500 activities)', 'mountain.2.fill'),
+    (250, 'Legend', 'An inspiration to all (1250 activities)', 'sparkles');
 
 -- Badges
 INSERT INTO badges (name, description, category, icon, criteria, rarity, display_order) VALUES

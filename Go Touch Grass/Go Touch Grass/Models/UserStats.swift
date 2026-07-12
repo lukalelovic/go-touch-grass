@@ -15,6 +15,7 @@ struct UserStats: Codable {
 
     // Activity statistics
     let totalActivities: Int
+    let totalXp: Int  // New: total XP earned (10 per activity)
     let totalActiveDays: Int
 
     // Activity type breakdown (JSONB from database)
@@ -36,6 +37,7 @@ struct UserStats: Codable {
         case username
         case userCreatedAt = "user_created_at"
         case totalActivities = "total_activities"
+        case totalXp = "total_xp"
         case totalActiveDays = "total_active_days"
         case activitiesByType = "activities_by_type"
         case totalLikesReceived = "total_likes_received"
@@ -82,6 +84,7 @@ extension UserStats {
         username: "outdoor_enthusiast",
         userCreatedAt: Date().addingTimeInterval(-30 * 24 * 3600), // 30 days ago
         totalActivities: 15,
+        totalXp: 150,  // 15 activities * 10 XP = 150 XP (Level 2)
         totalActiveDays: 12,
         activitiesByType: [
             "Hiking": 5,

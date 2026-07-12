@@ -114,23 +114,25 @@ struct ProfileTab: View {
                                     Spacer()
                                 }
 
-                                // Progress to next milestone
-                                if let nextName = levelInfo.nextMilestoneName, levelInfo.activitiesToNextMilestone > 0 {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        HStack {
-                                            Text("\(levelInfo.activitiesToNextMilestone) activities to \(nextName)")
-                                                .font(.caption)
-                                                .foregroundColor(colors.secondaryText)
-                                            Spacer()
-                                            Text("\(Int(levelInfo.progressToNextMilestone))%")
-                                                .font(.caption)
-                                                .fontWeight(.medium)
-                                                .foregroundColor(colors.primaryText)
-                                        }
+                                // Progress to next level
+                                VStack(alignment: .leading, spacing: 8) {
+                                    if let xpToNext = levelInfo.xpToNextLevel {
+                                        Text("\(xpToNext) XP to Level \(levelInfo.currentLevel + 1)")
+                                            .font(.caption)
+                                            .foregroundColor(colors.secondaryText)
+                                    }
 
-                                        ProgressView(value: levelInfo.progressToNextMilestone, total: 100)
+                                    if let currentXp = levelInfo.currentLevelXp {
+                                        ProgressView(value: Double(currentXp), total: 50)
                                             .tint(colors.accentDark)
                                     }
+                                }
+
+                                // Milestone progress
+                                if let nextName = levelInfo.nextMilestoneName, levelInfo.activitiesToNextMilestone > 0 {
+                                    Text("\(levelInfo.activitiesToNextMilestone) levels to \(nextName)")
+                                        .font(.caption)
+                                        .foregroundColor(colors.tertiaryText)
                                 }
                             }
                             .padding()

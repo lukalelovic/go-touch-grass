@@ -31,9 +31,14 @@ struct UserLevelInfo: Codable {
     let userId: UUID
     let username: String
     let totalActivities: Int
+    let totalXp: Int  // New: total XP earned (10 per activity)
 
-    // Current level = total activities (1:1 mapping)
+    // Current level calculation: floor(total_xp / 100) + 1
     let currentLevel: Int
+
+    // XP progress within current level
+    let currentLevelXp: Int?  // New: XP within current level (0-99)
+    let xpToNextLevel: Int?   // New: XP needed to reach next level
 
     // Current milestone info (highest reached)
     let currentMilestoneLevel: Int?
@@ -52,7 +57,10 @@ struct UserLevelInfo: Codable {
         case userId = "user_id"
         case username
         case totalActivities = "total_activities"
+        case totalXp = "total_xp"
         case currentLevel = "current_level"
+        case currentLevelXp = "current_level_xp"
+        case xpToNextLevel = "xp_to_next_level"
         case currentMilestoneLevel = "current_milestone_level"
         case milestoneName = "milestone_name"
         case milestoneDescription = "milestone_description"
@@ -80,7 +88,7 @@ extension LevelMilestone {
             id: 2,
             milestoneLevel: 5,
             name: "Seedling",
-            description: "Starting to grow",
+            description: "Starting to grow (25 activities)",
             icon: "leaf.circle.fill",
             createdAt: Date()
         ),
@@ -88,7 +96,7 @@ extension LevelMilestone {
             id: 3,
             milestoneLevel: 10,
             name: "Grass Toucher",
-            description: "Getting comfortable outside",
+            description: "Getting comfortable outside (50 activities)",
             icon: "tree.fill",
             createdAt: Date()
         ),
@@ -96,7 +104,7 @@ extension LevelMilestone {
             id: 4,
             milestoneLevel: 25,
             name: "Enthusiast",
-            description: "A regular outdoor enthusiast",
+            description: "A regular outdoor enthusiast (125 activities)",
             icon: "tree.circle.fill",
             createdAt: Date()
         ),
@@ -104,7 +112,7 @@ extension LevelMilestone {
             id: 5,
             milestoneLevel: 50,
             name: "Explorer",
-            description: "Exploring new paths",
+            description: "Exploring new paths (250 activities)",
             icon: "figure.hiking",
             createdAt: Date()
         ),
@@ -112,7 +120,7 @@ extension LevelMilestone {
             id: 6,
             milestoneLevel: 75,
             name: "Naturalist",
-            description: "Dedicated to outdoor life",
+            description: "Dedicated to outdoor life (375 activities)",
             icon: "globe.americas.fill",
             createdAt: Date()
         ),
@@ -120,15 +128,15 @@ extension LevelMilestone {
             id: 7,
             milestoneLevel: 100,
             name: "Trailblazer",
-            description: "Master of outdoor activities",
+            description: "Master of outdoor activities (500 activities)",
             icon: "mountain.2.fill",
             createdAt: Date()
         ),
         LevelMilestone(
             id: 8,
-            milestoneLevel: 500,
+            milestoneLevel: 250,
             name: "Legend",
-            description: "An inspiration to all",
+            description: "An inspiration to all (1250 activities)",
             icon: "sparkles",
             createdAt: Date()
         )
