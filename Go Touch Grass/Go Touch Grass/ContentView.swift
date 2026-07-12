@@ -90,8 +90,8 @@ struct ContentView: View {
                         .padding(.top, AppSpacing.xxs)
                         .padding(.bottom, AppSpacing.xs)
                         .background {
-                            // Static dark green background
-                            Color(red: 0.28, green: 0.50, blue: 0.20)
+                            // Darker green background for navbar
+                            Color(red: 0.22, green: 0.42, blue: 0.16)
                                 .opacity(0.95)
                                 .ignoresSafeArea(edges: .bottom)
                         }
